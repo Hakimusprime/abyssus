@@ -2,161 +2,287 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#080a0f">
-  <title>Abyssus — Agora de la Pensée</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>Abyssus — Explore l'Univers du Savoir</title>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/animations.css">
 </head>
 <body>
-
-<header class="site-header">
-  <div class="container header-content">
-    <a class="brand" href="#">
-      <span class="brand-symbol">Φ</span>
-      <span>
-        <strong style="display:block; line-height:1;">ABYSSUS</strong>
-        <small id="userTagDisplay" style="color:var(--muted); font-size:0.7rem;">Visiteur</small>
-      </span>
-    </a>
-
-    <div class="header-level">
-      <div class="level-line">
-        <span id="levelLabel">Niv. 1</span>
-        <span id="xpLabel">0 XP</span>
+  <div id="app">
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="navbar-container">
+        <div class="navbar-brand">
+          <span class="brand-icon">Φ</span>
+          <span class="brand-text">ABYSSUS</span>
+        </div>
+        <div class="navbar-menu">
+          <a href="#" class="nav-link active" data-section="home">Accueil</a>
+          <a href="#" class="nav-link" data-section="domains">Domaines</a>
+          <a href="#" class="nav-link" data-section="profile">Profil</a>
+          <a href="#" class="nav-link" data-section="community">Communauté</a>
+          <a href="#" class="nav-link" data-section="rankings">Classements</a>
+        </div>
+        <div class="navbar-player">
+          <div class="player-level">Niv. <span id="navLevel">1</span></div>
+          <div class="player-status">
+            <span id="navXP">0</span> XP
+          </div>
+        </div>
       </div>
-      <div class="progress"><span id="levelProgress"></span></div>
-    </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- HOME SECTION -->
+      <section id="home" class="section active">
+        <!-- Hero -->
+        <div class="hero">
+          <div class="hero-background">
+            <div class="hero-glow"></div>
+            <div class="hero-particles"></div>
+          </div>
+          <div class="hero-content">
+            <h1 class="hero-title">Bienvenue dans l'Abîme</h1>
+            <p class="hero-subtitle">Un univers de connaissance infini t'attend. Deviens un explorateur légendaire.</p>
+            <div class="hero-cta">
+              <button class="btn btn-primary" data-action="start-exploration">Commencer l'Exploration</button>
+              <button class="btn btn-secondary" data-action="learn-more">En Savoir Plus</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Status Card -->
+        <div class="section-container">
+          <div class="player-card">
+            <div class="card-header">
+              <h3>Ton Profil d'Explorateur</h3>
+            </div>
+            <div class="player-stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Niveau</div>
+                <div class="stat-value" id="profileLevel">1</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">XP Total</div>
+                <div class="stat-value" id="profileXP">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Santé</div>
+                <div class="stat-value" id="profileHP">100</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Domaines Explorés</div>
+                <div class="stat-value" id="profileDomains">0</div>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="levelProgress" style="width: 0%"></div>
+            </div>
+            <p class="progress-text" id="progressText">0 / 100 XP jusqu'au prochain niveau</p>
+          </div>
+        </div>
+
+        <!-- Domains Overview -->
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Les Domaines de l'Abîme</h2>
+            <p class="section-subtitle">Choisis un domaine et commence ton aventure</p>
+          </div>
+
+          <div class="domains-grid" id="domainsGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="section-container">
+          <div class="quick-stats">
+            <div class="stat-card">
+              <div class="stat-icon">🧠</div>
+              <h4>Questions Répondues</h4>
+              <p id="questionsAnswered">0</p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⭐</div>
+              <h4>Titres Débloqués</h4>
+              <p id="titlesUnlocked">0</p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🏆</div>
+              <h4>Reliques Collectées</h4>
+              <p id="relicsCollected">0</p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <h4>Rang Communauté</h4>
+              <p id="communityRank">N/A</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOMAINS SECTION -->
+      <section id="domains" class="section">
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Explore les Domaines</h2>
+            <p class="section-subtitle">Chaque domaine révèle de nouveaux secrets</p>
+          </div>
+
+          <div class="domains-list" id="domainsList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- PROFILE SECTION -->
+      <section id="profile" class="section">
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Ton Profil d'Explorateur</h2>
+          </div>
+
+          <div class="profile-grid">
+            <!-- Player Info -->
+            <div class="profile-panel">
+              <h3>Informations</h3>
+              <div class="form-group">
+                <label>Nom d'Explorateur</label>
+                <input type="text" id="playerName" class="form-input" placeholder="Ton pseudo">
+              </div>
+              <div class="stats-vertical">
+                <div class="stat-row">
+                  <span>Niveau Global</span>
+                  <strong id="profileLevelFull">1</strong>
+                </div>
+                <div class="stat-row">
+                  <span>XP Total</span>
+                  <strong id="profileXPFull">0</strong>
+                </div>
+                <div class="stat-row">
+                  <span>Santé</span>
+                  <strong id="profileHPFull">100 / 100</strong>
+                </div>
+                <div class="stat-row">
+                  <span>Domaines Maîtrisés</span>
+                  <strong id="profileDomainsMastered">0 / 10</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Titles & Badges -->
+            <div class="profile-panel">
+              <h3>Titres & Badges</h3>
+              <div id="titlesList" class="titles-grid">
+                <p class="empty-state">Complète des défis pour débloquer des titres</p>
+              </div>
+            </div>
+
+            <!-- Relics -->
+            <div class="profile-panel">
+              <h3>Reliques</h3>
+              <div id="relicsList" class="relics-grid">
+                <p class="empty-state">Aucune relique collectée pour le moment</p>
+              </div>
+            </div>
+
+            <!-- Achievements -->
+            <div class="profile-panel">
+              <h3>Réalisations</h3>
+              <div id="achievementsList" class="achievements-grid">
+                <p class="empty-state">Commence une aventure pour débloquer des réalisations</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMMUNITY SECTION -->
+      <section id="community" class="section">
+        <div class="section-container">
+          <div class="section-header">
+            <h2>La Communauté d'Abyssus</h2>
+            <p class="section-subtitle">Partage tes découvertes et apprends des autres explorateurs</p>
+          </div>
+
+          <div class="community-grid">
+            <div class="community-panel">
+              <h3>Réflexions Récentes</h3>
+              <div id="communityFeed" class="community-feed">
+                <p class="empty-state">Sois le premier à partager une réflexion !</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RANKINGS SECTION -->
+      <section id="rankings" class="section">
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Classements</h2>
+            <p class="section-subtitle">Où te situes-tu dans l'Abîme ?</p>
+          </div>
+
+          <div class="rankings-tabs">
+            <button class="tab-btn active" data-ranking="global">Général</button>
+            <button class="tab-btn" data-ranking="domains">Par Domaine</button>
+            <button class="tab-btn" data-ranking="season">Saison</button>
+          </div>
+
+          <div id="rankingsList" class="rankings-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>À Propos</h4>
+          <p>Abyssus est une plateforme d'apprentissage interactive transformant le savoir en aventure épique.</p>
+        </div>
+        <div class="footer-section">
+          <h4>Liens Rapides</h4>
+          <ul>
+            <li><a href="#">Conditions d'Utilisation</a></li>
+            <li><a href="#">Politique de Confidentialité</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Communauté</h4>
+          <ul>
+            <li><a href="#">Discord</a></li>
+            <li><a href="#">Twitter</a></li>
+            <li><a href="#">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Abyssus. Tous les explorateurs sont libres de rêver.</p>
+      </div>
+    </footer>
   </div>
-</header>
 
-<main class="container">
+  <!-- Modals & Dialogs -->
+  <div id="modal-container" class="modal-container"></div>
 
-  <!-- NAVIGATION TABS MOBILE -->
-  <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="feed">Exploration</button>
-    <button class="tab-btn" data-tab="debates">Débats & Agora</button>
-    <button class="tab-btn" data-tab="profile">Profil & Titres</button>
-    <button class="tab-btn creator-tab" data-tab="creator">Zone Créateur</button>
-  </nav>
-
-  <!-- TAB 1 : FEED ET QUESTIONS -->
-  <div class="tab-content active" id="tab-feed">
-    <section class="hero">
-      <p class="eyebrow">Philosophie · Psychologie · Introspection</p>
-      <h1>Penser l'impensable.</h1>
-      <div class="hero-actions">
-        <button class="button primary sm" id="randomQuestion">Question Aléatoire</button>
-        <button class="button sm" id="dailyQuestion">Question du Jour</button>
-      </div>
-    </section>
-
-    <div class="filters">
-      <input class="field" id="searchInput" type="search" placeholder="Rechercher une pensée...">
-      <select class="field" id="categoryFilter">
-        <option value="">Tous les domaines</option>
-      </select>
-      <select class="field" id="sortFilter">
-        <option value="ranking">Ordre Classique</option>
-        <option value="favorites">Mes Favoris</option>
-      </select>
-    </div>
-
-    <div class="question-list" id="questionList"></div>
-  </div>
-
-  <!-- TAB 2 : DÉBATS & CRÉATION PARTICIPATIVE -->
-  <div class="tab-content" id="tab-debates">
-    <section>
-      <h3>Espace Débats & Community</h3>
-      <p style="color:var(--muted); font-size:0.85rem;">Échangez vos visions. Seuls les penseurs de <strong>Niveau 5</strong> ou plus peuvent créer de nouveaux sujets.</p>
-      <p style="color:var(--muted); font-size:0.72rem; opacity:0.8;">⚠️ Version actuelle : ce fil est sauvegardé sur cet appareil uniquement. Deux visiteurs différents ne voient pas encore les mêmes réponses tant qu'aucune base partagée (ex: Firebase) n'est branchée.</p>
-
-      <div id="creationLockNotice" class="lock-notice">
-        <span>🔒 Atteignez le Niveau 5 pour proposer vos questions à l'Agora.</span>
-      </div>
-
-      <form id="addQuestionForm" class="hidden" style="margin-bottom:20px;">
-        <h4>Proposer un Sujet</h4>
-        <input class="field" id="customCategory" placeholder="Domaine (ex: Psychologie)" required>
-        <textarea class="field" id="customQuestion" placeholder="Votre question ou sujet..." required></textarea>
-        <textarea class="field" id="customParadox" placeholder="Paradoxe ou tension centrale..." required></textarea>
-        <button class="button primary" type="submit">Publier dans l'Agora</button>
-      </form>
-
-      <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
-
-      <h4>Réflexions de la Communauté</h4>
-      <div id="communityFeed"></div>
-    </section>
-  </div>
-
-  <!-- TAB 3 : PROFIL & TITRES -->
-  <div class="tab-content" id="tab-profile">
-    <section>
-      <div style="margin-bottom:15px;">
-        <input type="text" id="usernameInput" class="field inline-edit" value="Anonyme">
-        <p style="color:var(--muted); font-size:0.75rem; margin:4px 0;">Empreinte Appareil : <code id="deviceSignature">---</code></p>
-      </div>
-      
-      <div class="statistics">
-        <div class="stat-card"><strong id="xpCount">0</strong><span>XP Total</span></div>
-        <div class="stat-card"><strong id="userLevelDisplay">1</strong><span>Niveau</span></div>
-        <div class="stat-card"><strong id="completedCount">0</strong><span>Réflexions</span></div>
-        <div class="stat-card"><strong id="likesCount">0</strong><span>Soutiens reçus</span></div>
-      </div>
-
-      <h4>Titres de Spécialités</h4>
-      <div id="domainTitlesList" class="domain-grid"></div>
-
-      <h4 style="margin-top:20px;">Gestion des Données</h4>
-      <div class="data-actions">
-        <button class="button sm" id="exportData">Exporter Sauvegarde</button>
-        <button class="button sm" id="importData">Importer Sauvegarde</button>
-        <button class="button sm danger" id="resetData">Réinitialiser Réseau</button>
-        <input id="importFile" type="file" accept="application/json" hidden>
-      </div>
-    </section>
-  </div>
-
-  <!-- TAB 4 : ZONE CRÉATEUR -->
-  <div class="tab-content" id="tab-creator">
-    <section>
-      <h3>Espace Administration Créateur</h3>
-      <p style="color:var(--muted); font-size:0.85rem;">Ajoutez ou ajustez des questions directement dans le catalogue général.</p>
-
-      <form id="adminQuestionForm">
-        <input class="field" id="adminCategory" placeholder="Domaine" required>
-        <input class="field" type="number" id="adminLevel" placeholder="Niveau requis (1 à 5)" min="1" max="5" value="1" required>
-        <input class="field" type="number" id="adminXP" placeholder="XP accordé" value="15" required>
-        <textarea class="field" id="adminQuestion" placeholder="Énoncé de la question..." required></textarea>
-        <textarea class="field" id="adminParadox" placeholder="Paradoxe central..." required></textarea>
-        <button class="button primary" type="submit">Injecter dans la Base</button>
-      </form>
-    </section>
-  </div>
-
-</main>
-
-<!-- DIALOGUE RÉFLEXION -->
-<dialog id="questionDialog">
-  <article class="dialog-content">
-    <button class="dialog-close" id="closeDialog">✕</button>
-    <div class="question-meta" id="dialogMeta" style="margin-bottom:8px;"></div>
-    <h3 id="dialogQuestion" style="font-family:Georgia, serif; margin:0 0 10px;"></h3>
-    <div class="paradox-box">
-      <strong>Tension centrale :</strong>
-      <span id="dialogParadox"></span>
-    </div>
-    <textarea class="field" id="reflectionText" placeholder="Écrivez votre réflexion philosophique..." style="min-height:120px;"></textarea>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-      <button class="button sm" id="dialogFavorite">☆ Favori</button>
-      <button class="button primary sm" id="saveReflection">Partager (+XP)</button>
-    </div>
-  </article>
-</dialog>
-
-<div class="notification" id="notification"></div>
-
-<script src="script.js"></script>
+  <!-- Scripts -->
+  <script src="modules/constants.js"></script>
+  <script src="modules/data-manager.js"></script>
+  <script src="modules/player.js"></script>
+  <script src="modules/domains.js"></script>
+  <script src="modules/ui-manager.js"></script>
+  <script src="modules/events.js"></script>
+  <script src="modules/app.js"></script>
 </body>
 </html>
