@@ -1,57 +1,170 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abyssus - Banque QCM & Rank System</title>
-    
-    <!-- Polices Luxe (Cinzel & Montserrat) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABYSSUS — Archive & Progression</title>
+  <!-- Lien CSS direct à la racine -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <main class="app-container">
-        <!-- En-tête de marque -->
-        <header class="main-header">
-            <h1 class="gold-gradient-title">ABYSSUS BANQUE</h1>
-            <p class="subtitle">L'Épreuve Master QCM • Édition Rangs & Titres</p>
-        </header>
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast"></div>
 
-        <!-- Section Quiz -->
-        <section class="quiz-container luxury-card">
-            <div id="quiz-intro">
-                <h2>Testez Vos Connaissances</h2>
-                <p>Accumulez de l'XP et gravissez les échelons du classement général.</p>
-                <button id="start-btn" onclick="startNewGame()">Commencer l'Épreuve</button>
+  <!-- HEADER STYLE EDITORIAL / DOPPLE PRESS -->
+  <header class="site-header">
+    <div class="header-main">
+      <div class="brand">
+        <span class="catalog-no">CAT. N° 009-ABY</span>
+        <h1 class="logo">ABYSSUS</h1>
+      </div>
+      <div class="system-status">
+        <span class="status-indicator"></span>
+        <span class="status-text">SYSTÈME OPÉRATIONNEL</span>
+      </div>
+    </div>
+    
+    <!-- BARRE DE NAVIGATION & CATALOGUE -->
+    <nav class="catalog-nav">
+      <button class="nav-btn active" data-target="sec-profile">
+        <span class="nav-idx">01</span> ARCHIVE PROFIL
+      </button>
+      <button class="nav-btn" data-target="sec-reflections">
+        <span class="nav-idx">02</span> SANCTUAIRE RÉFLEXIONS
+      </button>
+      <button class="nav-btn" data-target="sec-quizzes">
+        <span class="nav-idx">03</span> ÉPREUVES DE SAVOIR
+      </button>
+      <button class="nav-btn" data-target="sec-boss">
+        <span class="nav-idx">04</span> CONFRONTATIONS & TITRES
+      </button>
+    </nav>
+  </header>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="main-container">
+
+    <!-- SECTION 01 : PROFIL -->
+    <section id="sec-profile" class="app-section active">
+      <div class="section-header">
+        <span class="section-tag">[ DOSSIER EXPLORATEUR ]</span>
+        <h2>STATUT DU REGISTRE</h2>
+      </div>
+
+      <div class="editorial-grid profile-layout">
+        <div class="catalog-card main-stats">
+          <div class="card-meta">
+            <span>REGISTRE #01</span>
+            <span>NIVEAU D'ACCRÉDITATION</span>
+          </div>
+          <div class="level-hero">
+            <span class="level-label">NIVEAU</span>
+            <span id="userLevel" class="level-number">1</span>
+          </div>
+          <div class="xp-bar-wrapper">
+            <div class="xp-info">
+              <span>EXPÉRIENCE ACCUMULÉE</span>
+              <span id="userXP">0 / 100 XP</span>
             </div>
-
-            <div id="quiz-box" style="display: none;">
-                <div id="quiz-progress" class="progress-badge">Question 1 / 10</div>
-                <h2 id="question-text">Chargement de la question...</h2>
-                <div id="options-container" class="options-grid"></div>
+            <div class="xp-progress-bg">
+              <div id="xpProgressBar" class="xp-progress-fill"></div>
             </div>
-        </section>
+          </div>
+        </div>
 
-        <!-- Section Classement -->
-        <section class="leaderboard-container luxury-card">
-            <h2 class="gold-gradient-title">Tableau d'Honneur (Temps Réel)</h2>
-            <div id="leaderboard-list">
-                <!-- Chargement dynamique depuis Firebase -->
+        <div class="catalog-card stats-breakdown">
+          <div class="card-meta">
+            <span>MATRICE DE CAPACITÉS</span>
+            <span>PARAMÈTRES</span>
+          </div>
+          <div class="attributes-grid">
+            <div class="attribute-item">
+              <span class="attr-name">FORCE</span>
+              <span id="stat-force" class="attr-val">10</span>
             </div>
-        </section>
-    </main>
+            <div class="attribute-item">
+              <span class="attr-name">AGILITÉ</span>
+              <span id="stat-agilite" class="attr-val">10</span>
+            </div>
+            <div class="attribute-item">
+              <span class="attr-name">INTELLECT</span>
+              <span id="stat-intellect" class="attr-val">10</span>
+            </div>
+            <div class="attribute-item">
+              <span class="attr-name">VOLONTÉ</span>
+              <span id="stat-volonte" class="attr-val">10</span>
+            </div>
+          </div>
+          <button id="btnResetData" class="btn btn-danger-outline">RÉINITIALISER L'ARCHIVE</button>
+        </div>
+      </div>
+    </section>
 
-    <!-- Fichiers JS du projet -->
-    <script src="quiz_questions.js"></script>
-    <script src="reflection_questions.js"></script>
-    <script src="script.js"></script>
+    <!-- SECTION 02 : RÉFLEXIONS -->
+    <section id="sec-reflections" class="app-section">
+      <div class="section-header">
+        <span class="section-tag">[ INDEX DES PENSÉES ]</span>
+        <h2>SANCTUAIRE DES RÉFLEXIONS</h2>
+        <p class="section-desc">Consignez vos analyses. L'XP attribuée nécessite l'obtention minimale d'un cœur ❤️ d'un tiers.</p>
+      </div>
+      <div id="reflectionsContainer" class="editorial-grid catalog-list"></div>
+    </section>
+
+    <!-- SECTION 03 : QUIZ -->
+    <section id="sec-quizzes" class="app-section">
+      <div class="section-header">
+        <span class="section-tag">[ ÉVALUATION TECHNIQUE ]</span>
+        <h2>ÉPREUVES DU SAVOIR</h2>
+      </div>
+      <div id="quizzesContainer" class="editorial-grid catalog-list"></div>
+    </section>
+
+    <!-- SECTION 04 : BOSS & ÉVÉNEMENTS -->
+    <section id="sec-boss" class="app-section">
+      <div class="section-header">
+        <span class="section-tag">[ REGISTRE DES COMBATS ]</span>
+        <h2>CONFRONTATIONS & ALIGNEMENTS</h2>
+      </div>
+
+      <div class="boss-action-banner">
+        <div>
+          <h3>ÉPREUVE DE FORCE SUPRÊME</h3>
+          <p>Engagez le combat contre les entités de l'Abysse pour débloquer des distinctions uniques.</p>
+        </div>
+        <button id="btnStartBoss" class="btn btn-solid">INITIALISER LE COMBAT</button>
+      </div>
+
+      <div class="editorial-grid dual-columns">
+        <div class="catalog-card">
+          <div class="card-meta">
+            <span>DISTINCTIONS OBTENUES</span>
+            <span>TITRES DE BOSS</span>
+          </div>
+          <div id="bossTitlesList" class="titles-container"></div>
+        </div>
+
+        <div class="catalog-card">
+          <div class="card-meta">
+            <span>ALIGNEMENTS EN COURS</span>
+            <span>ÉVÉNEMENTS ACTIFS</span>
+          </div>
+          <div id="eventTitlesList" class="titles-container"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <span>ABYSSUS SYSTEM &copy; 2026</span>
+    <span>CATALOGUE ARCHIVISTIQUE // EDITION SOMBRE</span>
+  </footer>
+
+  <!-- INTEGRATION DES SCRIPTS AVEC CHEMINS EXACTS DE VOTRE DOSSIER -->
+  <script src="reflection_questions.js"></script>
+  <script src="quiz_questions.js"></script>
+  <script src="systems/engines.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
