@@ -2,87 +2,290 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Abyssus Web App - Dark Fantasy Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Abyssus - Plateforme Interactive</title>
 
-  <!-- Google Fonts : Cinzel & Rajdhani -->
+  <!-- Google Fonts: Cinzel & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="dark-theme">
 
-  <!-- Aura Néon en Arrière-plan -->
-  <div class="ambient-glow"></div>
+  <!-- Arrière-plan lumineux ambiant -->
+  <div class="glow-sphere sphere-1"></div>
+  <div class="glow-sphere sphere-2"></div>
 
-  <!-- Écran de Cooldown (PV = 0) -->
-  <div id="cooldown-screen" class="overlay hidden">
-    <div class="cooldown-card">
-      <h2>💀 PV ÉPUISÉS</h2>
-      <p>Vous avez été terrassé dans l'Abysse. Régénération en cours :</p>
-      <div id="cooldown-timer" class="cooldown-clock">00:00:00</div>
-      <p class="small-info">Patientez avant de pouvoir défier à nouveau les ténèbres.</p>
+  <!-- BARRE SUPÉRIEURE (MOBILE & DESKTOP) -->
+  <header class="app-header">
+    <button id="menu-toggle" class="icon-btn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+    <div class="header-logo" onclick="switchView('view-home')">
+      <span class="logo-text">ABYSSUS</span>
     </div>
-  </div>
+    <div class="header-actions">
+      <button class="profile-avatar-btn" onclick="switchView('view-profile')">
+        <img id="header-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Hakim" alt="Avatar">
+      </button>
+    </div>
+  </header>
 
-  <!-- Conteneur Principal du Quiz -->
-  <div class="abyssus-quiz-container">
-    
-    <!-- Barre de Statistiques Joueur (PV, Rang, XP) -->
-    <div class="player-stats-bar">
-      <!-- PV -->
-      <div class="stat-box">
-        <span class="stat-label">Points de Vie</span>
-        <div class="bar-container pv-bar-container">
-          <div id="pv-fill" class="bar-fill pv-fill" style="width: 100%;"></div>
-        </div>
-        <span id="pv-text" class="stat-value">100 / 100</span>
+  <!-- MENU LATÉRAL (DRAWER GLASSMORPHISM) -->
+  <div id="sidebar-overlay" class="overlay-backdrop"></div>
+  <aside id="sidebar" class="sidebar">
+    <!-- Profil Joueur en haut du Menu -->
+    <div class="sidebar-user-card" onclick="switchView('view-profile')">
+      <div class="user-avatar-wrapper">
+        <img id="menu-user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Hakim" alt="Avatar">
+        <span id="menu-user-rank" class="rank-badge-pill">Rang F</span>
       </div>
-
-      <!-- Rang & XP -->
-      <div class="stat-box">
-        <span class="stat-label">Rang : <strong id="rank-badge" class="rank-tag">F</strong></span>
-        <div class="bar-container xp-bar-container">
-          <div id="xp-fill" class="bar-fill xp-fill" style="width: 0%;"></div>
+      <div class="user-details">
+        <h4 id="menu-user-name">Hakimusprime</h4>
+        <span class="user-title">Traqueur d'Abysse</span>
+        <div class="mini-bars">
+          <div class="mini-bar-track"><div id="menu-hp-fill" class="mini-bar-fill hp" style="width:100%"></div></div>
+          <div class="mini-bar-track"><div id="menu-xp-fill" class="mini-bar-fill xp" style="width:20%"></div></div>
         </div>
-        <span id="xp-text" class="stat-value">0 / 5000 XP</span>
       </div>
     </div>
 
-    <!-- En-tête de la Question & Chrono -->
-    <div class="quiz-header">
-      <span id="question-number">QUESTION 1 / 5</span>
-      <span id="timer-badge" class="badge timer">⏱️ 5s</span>
-      <span id="difficulty-badge" class="badge">MOYEN</span>
-    </div>
+    <!-- Navigation Principale -->
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" onclick="switchView('view-home')"><span class="icon">🏠</span> Accueil</a>
+      <a href="#" class="nav-item" onclick="switchView('view-profile')"><span class="icon">👤</span> Mon Profil</a>
+      <div class="nav-divider">CATALOGUES</div>
+      <a href="#" class="nav-item" onclick="switchCategory('penseurs')"><span class="icon">🧠</span> Penseurs</a>
+      <a href="#" class="nav-item" onclick="switchCategory('otaku')"><span class="icon">🎌</span> Otaku</a>
+      <a href="#" class="nav-item" onclick="switchCategory('culture')"><span class="icon">🌍</span> Culture Générale</a>
+      <div class="nav-divider">SYSTÈME</div>
+      <a href="#" class="nav-item" onclick="showToast('Section Classements bientôt disponible')"><span class="icon">🏆</span> Classements</a>
+      <a href="#" class="nav-item" onclick="showToast('Section Reliques verrouillée')"><span class="icon">🏅</span> Reliques</a>
+      <a href="#" class="nav-item" onclick="showToast('Section Titres verrouillée')"><span class="icon">🎯</span> Titres</a>
+      <a href="#" class="nav-item" onclick="showToast('Inventaire vide')"><span class="icon">🎒</span> Inventaire</a>
+      <a href="#" class="nav-item" onclick="showToast('Communauté en cours de déploiement')"><span class="icon">👥</span> Communauté</a>
+      <a href="#" class="nav-item" onclick="showToast('Paramètres système')"><span class="icon">⚙</span> Paramètres</a>
+      <a href="#" class="nav-item danger" onclick="showToast('Déconnexion...')"><span class="icon">🚪</span> Déconnexion</a>
+    </nav>
+  </aside>
 
-    <div class="progress-bar">
-      <div id="progress-fill" class="progress-fill"></div>
-    </div>
+  <!-- CONTENU PRINCIPAL (SPA VIEWS) -->
+  <main class="main-content">
 
-    <!-- Carte de Question unique -->
-    <div id="quiz-card" class="quiz-card">
-      <h3 id="question-text">Chargement de la question...</h3>
+    <!-- 1. PAGE D'ACCUEIL -->
+    <section id="view-home" class="content-view active">
       
-      <div id="options-container" class="options-grid"></div>
+      <!-- Banner Hero Luxe -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <span class="hero-tag">⚡ NOUVEAUTÉ / TENDANCE</span>
+          <h1 class="hero-title">PLONGEZ DANS L'ABYSSE</h1>
+          <p class="hero-desc">Explorez les connaissances ultimes à travers nos épreuves cataloguées. Penseurs, Otaku & Culture Générale.</p>
+        </div>
+      </div>
 
-      <!-- Boîte d'explication -->
-      <div id="explanation-box" class="explanation-box hidden">
-        <h4>💡 Explication :</h4>
-        <p id="explanation-text"></p>
+      <!-- Carte Synthèse Profil -->
+      <div class="home-profile-card">
+        <div class="profile-card-left">
+          <img id="home-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Hakim" alt="Profil">
+          <div>
+            <h3 id="home-username">Hakimusprime</h3>
+            <span class="status-indicator">🟢 Connecté au Réseau</span>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="switchView('view-profile')">Gérer le Profil</button>
+      </div>
+
+      <!-- Les 3 Grandes Catégories -->
+      <h2 class="section-heading">EXPLORER LES CATÉGORIES</h2>
+      <div class="category-hubs-grid">
+
+        <!-- Hub Penseurs -->
+        <div class="hub-card hub-penseurs" onclick="switchCategory('penseurs')">
+          <div class="hub-overlay"></div>
+          <div class="hub-body">
+            <span class="hub-icon">🧠</span>
+            <h3>PENSEURS</h3>
+            <p>Philosophie, Psychologie, Histoire, Sciences & Littérature.</p>
+            <span class="btn-hub">Explorer le Catalogue →</span>
+          </div>
+        </div>
+
+        <!-- Hub Otaku -->
+        <div class="hub-card hub-otaku" onclick="switchCategory('otaku')">
+          <div class="hub-overlay"></div>
+          <div class="hub-body">
+            <span class="hub-badge">HOT</span>
+            <span class="hub-icon">🎌</span>
+            <h3>OTAKU</h3>
+            <p>Manga, Anime, Jeux Vidéo, Light Novels & Webtoons.</p>
+            <span class="btn-hub">Explorer le Catalogue →</span>
+          </div>
+        </div>
+
+        <!-- Hub Culture Générale -->
+        <div class="hub-card hub-culture" onclick="switchCategory('culture')">
+          <div class="hub-overlay"></div>
+          <div class="hub-body">
+            <span class="hub-icon">🌍</span>
+            <h3>CULTURE GÉNÉRALE</h3>
+            <p>Géographie, Cinéma, Musique, Technologies & Sports.</p>
+            <span class="btn-hub">Explorer le Catalogue →</span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 2. PAGE CATALOGUE DYNAMIQUE (PENSEURS / OTAKU / CULTURE) -->
+    <section id="view-catalog" class="content-view">
+      <div class="catalog-header">
+        <button class="btn-back" onclick="switchView('view-home')">← Retour</button>
+        <h1 id="catalog-title">CATALOGUE OTAKU</h1>
+      </div>
+
+      <!-- Barre de sous-domaines / Filtres -->
+      <div class="subdomains-scroll-bar" id="subdomains-bar">
+        <!-- Généré dynamiquement en JS -->
+      </div>
+
+      <!-- Grille style Affiches / Poster de Luxe -->
+      <div class="posters-grid" id="posters-grid">
+        <!-- Cartes générées dynamiquement -->
+      </div>
+    </section>
+
+    <!-- 3. PAGE PROFIL JOUEUR COMPLETE -->
+    <section id="view-profile" class="content-view">
+      <div class="profile-hero-header">
+        <div class="profile-avatar-large">
+          <img id="profile-page-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Hakim" alt="Avatar">
+          <button class="edit-avatar-btn" onclick="openEditModal()">✏️</button>
+        </div>
+        <h2 id="profile-page-name">Hakimusprime</h2>
+        <span class="title-badge" id="profile-page-title">🎯 Érudit des Ombres</span>
+        <p id="profile-page-bio" class="profile-bio">Explorateur passionné de mangas obscurs et de récits psychologiques.</p>
+      </div>
+
+      <!-- Grille des Statistiques -->
+      <div class="stats-cards-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📊</span>
+          <span class="stat-value" id="stat-rank">Rang F</span>
+          <span class="stat-label">Rang Actuel</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">⚡</span>
+          <span class="stat-value" id="stat-xp">1,000 XP</span>
+          <span class="stat-label">Expérience</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">❤️</span>
+          <span class="stat-value" id="stat-hp">100 HP</span>
+          <span class="stat-label">Points de Vie</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🎯</span>
+          <span class="stat-value">88%</span>
+          <span class="stat-label">Taux de Réussite</span>
+        </div>
+      </div>
+
+      <!-- Badges & Reliques -->
+      <h3 class="section-subheading">Reliques Équipées</h3>
+      <div class="items-row">
+        <div class="item-slot"><span class="item-emoji">🗡️</span><span>Lame d'Anubis</span></div>
+        <div class="item-slot"><span class="item-emoji">📜</span><span>Grit d'Erudition</span></div>
+        <div class="item-slot empty"><span>+ Vide</span></div>
+      </div>
+
+      <h3 class="section-subheading">Badges d'Haut Fait</h3>
+      <div class="badges-row">
+        <span class="badge-item">👁️ Premier Pas</span>
+        <span class="badge-item">🔥 Sans Faute</span>
+        <span class="badge-item">📚 Spécialiste Otaku</span>
+      </div>
+
+      <div style="margin-top:24px; text-align:center;">
+        <button class="btn-primary" onclick="openEditModal()">Modifier mes informations</button>
+      </div>
+    </section>
+
+    <!-- 4. INTERFACE D'ÉPREUVE / QUIZ (MODULE DÉDIÉ) -->
+    <section id="view-quiz" class="content-view">
+      <div class="quiz-top-bar">
+        <button class="btn-back" onclick="confirmExitQuiz()">✕ Quitter l'épreuve</button>
+        <span id="quiz-category-tag" class="quiz-tag">OTAKU</span>
+      </div>
+
+      <!-- HUD de Combat / Jeu -->
+      <div class="hud-card">
+        <div class="hud-stat">
+          <span>SANTÉ (HP)</span>
+          <div class="bar-track"><div id="pv-fill" class="bar-fill hp-bar" style="width:100%"></div></div>
+          <span id="pv-text" class="bar-val">100 / 100</span>
+        </div>
+        <div class="hud-stat">
+          <span>PROGRESSION XP</span>
+          <div class="bar-track"><div id="xp-fill" class="bar-fill xp-bar" style="width:20%"></div></div>
+          <span id="xp-text" class="bar-val">0 / 5000 XP</span>
+        </div>
+      </div>
+
+      <!-- En-tête Question & Chrono -->
+      <div class="quiz-card-wrapper">
+        <div class="quiz-card-header">
+          <span id="question-number">QUESTION 1 / 5</span>
+          <span id="timer-badge" class="timer-pill">⏱️ 5s</span>
+          <span id="difficulty-badge" class="diff-pill">MOYEN</span>
+        </div>
+
+        <div id="quiz-card" class="quiz-question-card">
+          <h3 id="question-text">Chargement de l'épreuve...</h3>
+          <div id="options-container" class="options-stack"></div>
+          
+          <div id="explanation-box" class="explanation-card hidden">
+            <h4>💡 Analyse :</h4>
+            <p id="explanation-text"></p>
+          </div>
+        </div>
+
+        <div class="quiz-actions">
+          <button id="next-btn" class="btn-primary btn-full" disabled>Question Suivante →</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL D'ÉDITION DU PROFIL -->
+  <div id="edit-modal" class="overlay-backdrop">
+    <div class="modal-card">
+      <h3>Modifier le Profil</h3>
+      <div class="form-group">
+        <label>Pseudo</label>
+        <input type="text" id="edit-input-username" value="Hakimusprime">
+      </div>
+      <div class="form-group">
+        <label>URL de l'Avatar / Seed</label>
+        <input type="text" id="edit-input-avatar" value="Hakim">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="edit-input-bio">Explorateur passionné de mangas obscurs et de récits psychologiques.</textarea>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
+        <button class="btn-primary" onclick="saveProfileChanges()">Enregistrer</button>
       </div>
     </div>
-
-    <!-- Actions -->
-    <div class="quiz-footer">
-      <button id="next-btn" class="btn-primary" disabled>Question Suivante →</button>
-    </div>
-
   </div>
 
-  <!-- Intégration du script nommé script.js -->
+  <div id="toast" class="toast">Notification</div>
+
   <script src="script.js"></script>
 </body>
 </html>
