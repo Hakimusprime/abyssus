@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#080a0f">
+  <title>Abyssus — Agora de la Pensée</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-content">
+    <a class="brand" href="#">
+      <span class="brand-symbol">Φ</span>
+      <span>
+        <strong style="display:block; line-height:1;">ABYSSUS</strong>
+        <small id="userTagDisplay" style="color:var(--muted); font-size:0.7rem;">Visiteur</small>
+      </span>
+    </a>
+
+    <div class="header-level">
+      <div class="level-line">
+        <span id="levelLabel">Niv. 1</span>
+        <span id="xpLabel">0 XP</span>
+      </div>
+      <div class="progress"><span id="levelProgress"></span></div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- NAVIGATION TABS MOBILE -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="feed">Exploration</button>
+    <button class="tab-btn" data-tab="debates">Débats & Agora</button>
+    <button class="tab-btn" data-tab="profile">Profil & Titres</button>
+    <button class="tab-btn creator-tab" data-tab="creator">Zone Créateur</button>
+  </nav>
+
+  <!-- TAB 1 : FEED ET QUESTIONS -->
+  <div class="tab-content active" id="tab-feed">
+    <section class="hero">
+      <p class="eyebrow">Philosophie · Psychologie · Introspection</p>
+      <h1>Penser l'impensable.</h1>
+      <div class="hero-actions">
+        <button class="button primary sm" id="randomQuestion">Question Aléatoire</button>
+        <button class="button sm" id="dailyQuestion">Question du Jour</button>
+      </div>
+    </section>
+
+    <div class="filters">
+      <input class="field" id="searchInput" type="search" placeholder="Rechercher une pensée...">
+      <select class="field" id="categoryFilter">
+        <option value="">Tous les domaines</option>
+      </select>
+      <select class="field" id="sortFilter">
+        <option value="ranking">Ordre Classique</option>
+        <option value="favorites">Mes Favoris</option>
+      </select>
+    </div>
+
+    <div class="question-list" id="questionList"></div>
+  </div>
+
+  <!-- TAB 2 : DÉBATS & CRÉATION PARTICIPATIVE -->
+  <div class="tab-content" id="tab-debates">
+    <section>
+      <h3>Espace Débats & Community</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">Échangez vos visions. Seuls les penseurs de <strong>Niveau 5</strong> ou plus peuvent créer de nouveaux sujets.</p>
+      <p style="color:var(--muted); font-size:0.72rem; opacity:0.8;">⚠️ Version actuelle : ce fil est sauvegardé sur cet appareil uniquement. Deux visiteurs différents ne voient pas encore les mêmes réponses tant qu'aucune base partagée (ex: Firebase) n'est branchée.</p>
+
+      <div id="creationLockNotice" class="lock-notice">
+        <span>🔒 Atteignez le Niveau 5 pour proposer vos questions à l'Agora.</span>
+      </div>
+
+      <form id="addQuestionForm" class="hidden" style="margin-bottom:20px;">
+        <h4>Proposer un Sujet</h4>
+        <input class="field" id="customCategory" placeholder="Domaine (ex: Psychologie)" required>
+        <textarea class="field" id="customQuestion" placeholder="Votre question ou sujet..." required></textarea>
+        <textarea class="field" id="customParadox" placeholder="Paradoxe ou tension centrale..." required></textarea>
+        <button class="button primary" type="submit">Publier dans l'Agora</button>
+      </form>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+
+      <h4>Réflexions de la Communauté</h4>
+      <div id="communityFeed"></div>
+    </section>
+  </div>
+
+  <!-- TAB 3 : PROFIL & TITRES -->
+  <div class="tab-content" id="tab-profile">
+    <section>
+      <div style="margin-bottom:15px;">
+        <input type="text" id="usernameInput" class="field inline-edit" value="Anonyme">
+        <p style="color:var(--muted); font-size:0.75rem; margin:4px 0;">Empreinte Appareil : <code id="deviceSignature">---</code></p>
+      </div>
+      
+      <div class="statistics">
+        <div class="stat-card"><strong id="xpCount">0</strong><span>XP Total</span></div>
+        <div class="stat-card"><strong id="userLevelDisplay">1</strong><span>Niveau</span></div>
+        <div class="stat-card"><strong id="completedCount">0</strong><span>Réflexions</span></div>
+        <div class="stat-card"><strong id="likesCount">0</strong><span>Soutiens reçus</span></div>
+      </div>
+
+      <h4>Titres de Spécialités</h4>
+      <div id="domainTitlesList" class="domain-grid"></div>
+
+      <h4 style="margin-top:20px;">Gestion des Données</h4>
+      <div class="data-actions">
+        <button class="button sm" id="exportData">Exporter Sauvegarde</button>
+        <button class="button sm" id="importData">Importer Sauvegarde</button>
+        <button class="button sm danger" id="resetData">Réinitialiser Réseau</button>
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </div>
+    </section>
+  </div>
+
+  <!-- TAB 4 : ZONE CRÉATEUR -->
+  <div class="tab-content" id="tab-creator">
+    <section>
+      <h3>Espace Administration Créateur</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">Ajoutez ou ajustez des questions directement dans le catalogue général.</p>
+
+      <form id="adminQuestionForm">
+        <input class="field" id="adminCategory" placeholder="Domaine" required>
+        <input class="field" type="number" id="adminLevel" placeholder="Niveau requis (1 à 5)" min="1" max="5" value="1" required>
+        <input class="field" type="number" id="adminXP" placeholder="XP accordé" value="15" required>
+        <textarea class="field" id="adminQuestion" placeholder="Énoncé de la question..." required></textarea>
+        <textarea class="field" id="adminParadox" placeholder="Paradoxe central..." required></textarea>
+        <button class="button primary" type="submit">Injecter dans la Base</button>
+      </form>
+    </section>
+  </div>
+
+</main>
+
+<!-- DIALOGUE RÉFLEXION -->
+<dialog id="questionDialog">
+  <article class="dialog-content">
+    <button class="dialog-close" id="closeDialog">✕</button>
+    <div class="question-meta" id="dialogMeta" style="margin-bottom:8px;"></div>
+    <h3 id="dialogQuestion" style="font-family:Georgia, serif; margin:0 0 10px;"></h3>
+    <div class="paradox-box">
+      <strong>Tension centrale :</strong>
+      <span id="dialogParadox"></span>
+    </div>
+    <textarea class="field" id="reflectionText" placeholder="Écrivez votre réflexion philosophique..." style="min-height:120px;"></textarea>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <button class="button sm" id="dialogFavorite">☆ Favori</button>
+      <button class="button primary sm" id="saveReflection">Partager (+XP)</button>
+    </div>
+  </article>
+</dialog>
+
+<div class="notification" id="notification"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
