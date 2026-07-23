@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#080a0f">
+  <title>Abyssus — Agora de la Pensée</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div id="connectionOverlay" class="connection-overlay">
+  <div class="connection-box">
+    <span class="connection-symbol">Φ</span>
+    <p id="connectionStatus">Connexion à l'Abyssus...</p>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container header-content">
+    <a class="brand" href="#">
+      <span class="brand-symbol">Φ</span>
+      <span>
+        <strong style="display:block; line-height:1;">ABYSSUS</strong>
+        <small id="userTagDisplay" style="color:var(--muted); font-size:0.7rem;">Visiteur</small>
+      </span>
+    </a>
+
+    <div class="header-level">
+      <div class="level-line">
+        <span id="levelLabel">Rang F</span>
+        <span id="xpLabel">0 XP</span>
+      </div>
+      <div class="progress"><span id="levelProgress"></span></div>
+      <div class="hp-line">
+        <span class="hp-icon">♥</span>
+        <div class="hp-bar"><span id="hpFill"></span></div>
+        <span id="hpLabel">100/100 HP</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- NAVIGATION TABS MOBILE -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="feed">Exploration</button>
+    <button class="tab-btn" data-tab="debates">Débats & Agora</button>
+    <button class="tab-btn" data-tab="ranking">Classement</button>
+    <button class="tab-btn" data-tab="profile">Profil & Titres</button>
+    <button class="tab-btn creator-tab" data-tab="creator">Zone Créateur</button>
+  </nav>
+
+  <!-- TAB 1 : FEED ET QUESTIONS -->
+  <div class="tab-content active" id="tab-feed">
+    <section class="hero">
+      <p class="eyebrow">Explore les couches de l'Abîme</p>
+      <h1>Descends dans l'Abyssus.</h1>
+      <div class="hero-actions">
+        <button class="button primary sm" id="randomQuestion">Épreuve Aléatoire</button>
+        <button class="button sm" id="dailyQuestion">Épreuve du Jour</button>
+        <button class="button sm" id="bossEncounterBtn" style="border-color:var(--red);color:var(--red);">⚔ Combat de Boss</button>
+      </div>
+    </section>
+
+    <!-- BOSS ENCOUNTER (affiché par le moteur) -->
+    <div id="bossEncounterContainer" class="hidden"></div>
+
+    <!-- ÉVÉNEMENTS ACTIFS -->
+    <div class="section-header">
+      <h3>Événements</h3>
+      <span class="badge" id="eventCount">0 actif(s)</span>
+    </div>
+    <div class="events-grid" id="eventPanel"></div>
+
+    <!-- QUÊTES ACTIVES -->
+    <div class="section-header">
+      <h3>Quêtes</h3>
+      <span class="badge" id="questCount">0 active(s)</span>
+    </div>
+    <div class="quests-grid" id="questPanel"></div>
+
+    <div class="filters">
+      <input class="field" id="searchInput" type="search" placeholder="Rechercher une épreuve...">
+      <select class="field" id="typeFilter">
+        <option value="">Tous les types</option>
+        <option value="reflexion">Sanctuaire (Réflexion)</option>
+        <option value="quiz">Quiz (Choix multiples)</option>
+      </select>
+      <select class="field" id="categoryFilter">
+        <option value="">Tous les domaines</option>
+      </select>
+      <select class="field" id="sortFilter">
+        <option value="ranking">Ordre Classique</option>
+        <option value="favorites">Mes Favoris</option>
+      </select>
+    </div>
+
+    <div class="question-list" id="questionList"></div>
+  </div>
+
+  <!-- TAB 2 : DÉBATS & CRÉATION PARTICIPATIVE -->
+  <div class="tab-content" id="tab-debates">
+    <section>
+      <h3>Espace Débats & Community</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">Échangez vos visions. Seuls les penseurs de <strong>Niveau 5</strong> ou plus peuvent créer de nouveaux sujets.</p>
+
+      <div id="creationLockNotice" class="lock-notice">
+        <span>🔒 Atteignez le Rang C pour proposer vos épreuves à l'Agora.</span>
+      </div>
+
+      <form id="addQuestionForm" class="hidden" style="margin-bottom:20px;">
+        <h4>Proposer une Épreuve de Réflexion</h4>
+        <input class="field" id="customCategory" placeholder="Domaine (ex: Philosophie)" required>
+        <textarea class="field" id="customQuestion" placeholder="Votre question ou sujet..." required></textarea>
+        <textarea class="field" id="customParadox" placeholder="Paradoxe ou tension centrale..." required></textarea>
+        <button class="button primary" type="submit">Publier dans l'Agora</button>
+      </form>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+
+      <h4>Réflexions de la Communauté</h4>
+      <div id="communityFeed"></div>
+    </section>
+  </div>
+
+  <!-- TAB : CLASSEMENT -->
+  <div class="tab-content" id="tab-ranking">
+    <section>
+      <h3>Classement des Penseurs</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">Les 20 esprits les plus actifs de l'Abyssus, en temps réel.</p>
+      <div id="rankingList" class="ranking-list"></div>
+    </section>
+  </div>
+
+  <!-- TAB 3 : PROFIL & TITRES -->
+  <div class="tab-content" id="tab-profile">
+    <section>
+      <div style="margin-bottom:15px;">
+        <input type="text" id="usernameInput" class="field inline-edit" value="Anonyme">
+        <p style="color:var(--muted); font-size:0.75rem; margin:4px 0;">Identifiant de Compte : <code id="deviceSignature">---</code></p>
+      </div>
+      
+      <div class="statistics">
+        <div class="stat-card"><strong id="xpCount">0</strong><span>XP Total</span></div>
+        <div class="stat-card"><strong id="userLevelDisplay">1</strong><span>Niveau</span></div>
+        <div class="stat-card"><strong id="completedCount">0</strong><span>Réflexions</span></div>
+        <div class="stat-card"><strong id="likesCount">0</strong><span>Soutiens reçus</span></div>
+      </div>
+
+      <!-- STATISTIQUES ÉTENDUES -->
+      <div id="detailedStatsPanel"></div>
+
+      <h4>Titres de Spécialités</h4>
+      <div id="domainTitlesList" class="domain-grid"></div>
+
+      <h4 style="margin-top:20px;">BOSS vaincus</h4>
+      <div id="bossTitlesList" class="domain-grid"></div>
+
+      <h4 style="margin-top:20px;">Titres d'Événements</h4>
+      <div id="eventTitlesList" class="domain-grid"></div>
+
+      <h4 style="margin-top:20px;">Inventaire de Reliques</h4>
+      <div id="relicsList" class="relics-grid"></div>
+
+      <h4 style="margin-top:20px;">Gestion des Données</h4>
+      <div class="data-actions">
+        <button class="button sm" id="exportData">Exporter Sauvegarde</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- TAB 4 : ZONE CRÉATEUR -->
+  <div class="tab-content" id="tab-creator">
+    <section>
+      <h3>Espace Administration Créateur</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">Ajoutez ou ajustez des questions directement dans le catalogue général.</p>
+
+      <form id="adminQuestionForm">
+        <select class="field" id="adminType">
+          <option value="reflexion">Réflexion (Sanctuaire)</option>
+          <option value="quiz">Quiz (Choix multiples)</option>
+        </select>
+        <input class="field" id="adminCategory" placeholder="Domaine" required>
+        <input class="field" type="number" id="adminXP" placeholder="XP accordé" value="15" required>
+
+        <div id="adminReflexionFields">
+          <input class="field" type="number" id="adminLevel" placeholder="Niveau requis (1 à 5)" min="1" max="5" value="1">
+          <textarea class="field" id="adminQuestion" placeholder="Énoncé de la question..."></textarea>
+          <textarea class="field" id="adminParadox" placeholder="Paradoxe central..."></textarea>
+        </div>
+
+        <div id="adminQuizFields" class="hidden">
+          <textarea class="field" id="adminQuizQuestion" placeholder="Énoncé de la question..."></textarea>
+          <input class="field" id="adminChoice0" placeholder="Choix 1">
+          <input class="field" id="adminChoice1" placeholder="Choix 2">
+          <input class="field" id="adminChoice2" placeholder="Choix 3">
+          <input class="field" id="adminChoice3" placeholder="Choix 4">
+          <select class="field" id="adminCorrect">
+            <option value="0">Bonne réponse : Choix 1</option>
+            <option value="1">Bonne réponse : Choix 2</option>
+            <option value="2">Bonne réponse : Choix 3</option>
+            <option value="3">Bonne réponse : Choix 4</option>
+          </select>
+          <select class="field" id="adminDifficulty">
+            <option>Débutant</option>
+            <option>Amateur</option>
+            <option>Confirmé</option>
+            <option>Expert</option>
+            <option>Maître</option>
+            <option>Abyssal</option>
+          </select>
+        </div>
+
+        <button class="button primary" type="submit">Injecter dans la Base</button>
+      </form>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+      <h4>Générer du contenu</h4>
+      <div style="display:grid; gap:8px; grid-template-columns:1fr 1fr;">
+        <button class="button sm" id="adminCreateBoss">➕ Créer un Boss</button>
+        <button class="button sm" id="adminCreateEvent">➕ Créer un Événement</button>
+        <button class="button sm" id="adminCreateQuest">➕ Créer une Quête</button>
+        <button class="button sm" id="adminCreateRelic">➕ Créer une Relique</button>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<!-- DIALOGUE RÉFLEXION / QUESTION -->
+<dialog id="questionDialog">
+  <article class="dialog-content">
+    <button class="dialog-close" id="closeDialog">✕</button>
+    <div class="question-meta" id="dialogMeta" style="margin-bottom:8px;"></div>
+    <h3 id="dialogQuestion" style="font-family:Georgia, serif; margin:0 0 10px;"></h3>
+
+    <!-- Mode Réflexion -->
+    <div id="reflexionMode">
+      <div class="paradox-box">
+        <strong>Tension centrale :</strong>
+        <span id="dialogParadox"></span>
+      </div>
+      <textarea class="field" id="reflectionText" placeholder="Écrivez votre réflexion..." style="min-height:120px;"></textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <button class="button sm" id="dialogFavorite">☆ Favori</button>
+        <button class="button primary sm" id="saveReflection">Partager (+XP)</button>
+      </div>
+    </div>
+
+    <!-- Mode Quiz -->
+    <div id="quizMode" class="hidden">
+      <div id="quizChoices" class="quiz-choices"></div>
+      <div id="quizFeedback" class="quiz-feedback hidden"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <button class="button sm" id="dialogFavoriteQuiz">☆ Favori</button>
+        <button class="button primary sm hidden" id="closeQuizResult">Continuer</button>
+      </div>
+    </div>
+  </article>
+</dialog>
+
+<!-- DIALOGUE BOSS -->
+<dialog id="bossDialog">
+  <article class="dialog-content" id="bossDialogContent">
+    <!-- Rempli dynamiquement par boss-engine.js -->
+  </article>
+</dialog>
+
+<div class="notification" id="notification"></div>
+
+<!-- SCRIPTS : Systèmes modulaires (ordre important !) -->
+<script src="reflection_questions.js"></script>
+<script src="quiz_questions.js"></script>
+<script src="systems/event-bus.js"></script>
+<script src="systems/anti-cheat.js"></script>
+<script src="systems/player-stats.js"></script>
+<script src="data/bosses.js"></script>
+<script src="systems/boss-engine.js"></script>
+<script src="systems/event-engine.js"></script>
+<script src="systems/quest-system.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
