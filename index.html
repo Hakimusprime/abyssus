@@ -230,8 +230,123 @@
 
 <div class="notification" id="notification"></div>
 
-<script src="reflection_questions.js"></script>
-<script src="quiz_questions.js"></script>
-<script src="script.js"></script>
+<script>
+"use strict";
+
+const ADMIN_PASSPHRASE = "abyssus-createur";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA7OxNqHBiVsCNxdhatWRY1WUHYPaO1AmM",
+  authDomain: "abyssus-1eb8b.firebaseapp.com",
+  projectId: "abyssus-1eb8b",
+  storageBucket: "abyssus-1eb8b.firebasestorage.app",
+  messagingSenderId: "801360821944",
+  appId: "1:801360821944:web:fb267bd710f067bf027e4d"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const RANKS = [
+  { name: "F", threshold: 0 },
+  { name: "E", threshold: 100 },
+  { name: "D", threshold: 250 },
+  { name: "C", threshold: 500 },
+  { name: "B", threshold: 900 },
+  { name: "A", threshold: 1500 },
+  { name: "S", threshold: 2400 },
+  { name: "SS", threshold: 3600 },
+  { name: "SSS", threshold: 5200 },
+  { name: "Abyss", threshold: 7200 }
+];
+const AGORA_UNLOCK_RANK = 3;
+
+function getRankIndex(xp) {
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i++) { if (xp >= RANKS[i].threshold) idx = i; }
+  return idx;
+}
+
+const RELICS = {
+  1: { name: "Écho de la Première Page", rarity: "Commune" },
+  2: { name: "Chandelle du Veilleur", rarity: "Commune" },
+  3: { name: "Clé Rouillée de l'Archiviste", rarity: "Rare" },
+  4: { name: "Fragment de Grimoire Interdit", rarity: "Rare" },
+  5: { name: "Amulette du Sage Oublié", rarity: "Épique" },
+  6: { name: "Miroir des Vérités Voilées", rarity: "Épique" },
+  7: { name: "Couronne de l'Esprit Abyssal", rarity: "Légendaire" },
+  8: { name: "Sceau du Gardien Ultime", rarity: "Légendaire" },
+  9: { name: "Cœur de l'Abîme", rarity: "Mythique" }
+};
+
+const DOMAIN_TITLES = {
+  "Philosophie": [{ threshold: 0, title: "Penseur" }, { threshold: 50, title: "Sage" }],
+  "Psychologie": [{ threshold: 0, title: "Curieux de l'Esprit" }, { threshold: 50, title: "Observateur" }]
+};
+
+let currentUid = null;
+let userData = null;
+let appInitialized = false;
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUid = user.uid;
+    attachUserListener(user.uid);
+  } else {
+    document.getElementById("connectionStatus").textContent = "Création de ton profil...";
+    auth.signInAnonymously().catch(err => {
+      document.getElementById("connectionStatus").textContent = "Erreur : " + err.message;
+    });
+  }
+});
+
+function attachUserListener(uid) {
+  db.collection("users").doc(uid).get().then(doc => {
+    if (!doc.exists) {
+      return db.collection("users").doc(uid).set({
+        pseudo: "Explorateur-" + Math.floor(Math.random() * 1000),
+        xp: 0, domainXP: {}, hp: 100, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  }).then(() => {
+    db.collection("users").doc(uid).onSnapshot(snap => {
+      if (!snap.exists) return;
+      userData = snap.data();
+      if (!appInitialized) {
+        appInitialized = true;
+        initApp();
+      } else {
+        renderHeaderAndProfile();
+      }
+    });
+  });
+}
+
+function initApp() {
+  const overlay = document.getElementById("connectionOverlay");
+  if (overlay) overlay.style.display = "none";
+  renderHeaderAndProfile();
+  populateCategoryFilter();
+}
+
+function populateCategoryFilter() {
+  const select = document.getElementById("categoryFilter");
+  if (!select) return;
+  select.innerHTML = `<option value="">Tous les domaines</option><option value="Philosophie">Philosophie</option><option value="Psychologie">Psychologie</option>`;
+}
+
+function renderHeaderAndProfile() {
+  if (!userData) return;
+  const xp = userData.xp || 0;
+  const rank = RANKS[getRankIndex(xp)];
+  document.getElementById("levelLabel").textContent = `Rang ${rank.name}`;
+  document.getElementById("xpLabel").textContent = `${xp} XP`;
+  document.getElementById("xpCount").textContent = xp;
+  document.getElementById("userTagDisplay").textContent = userData.pseudo;
+  const hp = userData.hp != null ? userData.hp : 100;
+  document.getElementById("hpLabel").textContent = `${hp}/100 HP`;
+}
+</script>
 </body>
 </html>
