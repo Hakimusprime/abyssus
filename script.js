@@ -394,3 +394,13 @@ function renderHeaderAndProfile() {
   renderDomainList();
   renderRelicsList();
 }
+function populateCategoryFilter() {
+  const select = document.getElementById("categoryFilter");
+  if (!select) return;
+  const domains = Object.keys(DOMAIN_TITLES);
+  select.innerHTML = `<option value="Tous">Tous les domaines</option>` + domains.map(d => `<option value="${d}">${d}</option>`).join("");
+  select.addEventListener("change", (e) => {
+    currentFilter = e.target.value;
+    displayQuestions();
+  });
+}
