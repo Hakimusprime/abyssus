@@ -1,255 +1,520 @@
-// ==========================================
-// 1. BASES DE DONNÉES DU CATALOGUE PAR DOMAINES
-// ==========================================
-const CATALOG_DATA = {
+/* ==========================================================================
+   ABYSSUS - ARCHITECTURE FRONT-END (PWA & SPA ENGINE)
+   ========================================================================== */
+
+// 1. ÉTAT GLOBAL ET PROFIL JOUEUR
+const AbyssState = {
+  player: {
+    username: "hakimusprime",
+    title: "Traqueur d'Abysse",
+    bio: "Explorateur passionné de récits sombres, de psychologie et de mangas obscurs.",
+    avatarSeed: "hakimusprime",
+    xp: 2450,
+    hp: 100,
+    maxHp: 100,
+    lastHpDepletedTime: null // Timestamp de la perte totale de HP
+  },
+  currentCategory: 'otaku',
+  currentSubdomain: 'Tous',
+  activeQuiz: null,
+  currentQuestionIndex: 0,
+  selectedOption: null,
+  isAnswered: false,
+  questionTimer: null,
+  timeLeft: 15,
+  hpTimerInterval: null
+};
+
+// Constante : Cooldown de régénération totale des HP (1 Heure = 3600000 ms)
+const HP_REGEN_COOLDOWN_MS = 60 * 60 * 1000;
+
+/* ==========================================================================
+   2. SYSTEME DE PROGRESSION (XP & LEVELING IMMERSIF)
+   ========================================================================== */
+
+/**
+  * Courbe exponentielle longue :
+  * Niv 1: 0 XP
+  * Niv 2: 1,000 XP
+  * Niv 3: 4,000 XP
+  * Niv 4: 9,000 XP
+  * Niv 5: 16,000 XP ... Niv 10: 81,000 XP
+  */
+function getPlayerLevel(xp) {
+  return Math.floor(1 + Math.sqrt(xp / 1000));
+}
+
+function getXpForNextLevel(currentLevel) {
+  return Math.pow(currentLevel, 2) * 1000;
+}
+
+function getXpForCurrentLevel(currentLevel) {
+  return Math.pow(currentLevel - 1, 2) * 1000;
+}
+
+function addXp(amount) {
+  const oldLevel = getPlayerLevel(AbyssState.player.xp);
+  AbyssState.player.xp += amount;
+  const newLevel = getPlayerLevel(AbyssState.player.xp);
+
+  if (newLevel > oldLevel) {
+    showToast(`⚡ MONTÉE DE NIVEAU ! Vous êtes désormais Niveau ${newLevel}`);
+  } else {
+    showToast(`+${amount} XP gagnés !`);
+  }
+  updatePlayerUI();
+}
+
+/* ==========================================================================
+   3. GESTION DES HP & RÉGÉNÉRATION SUR 1 HEURE
+   ========================================================================== */
+
+function takeDamage(damage) {
+  AbyssState.player.hp = Math.max(0, AbyssState.player.hp - damage);
+  updatePlayerUI();
+
+  if (AbyssState.player.hp === 0 && !AbyssState.player.lastHpDepletedTime) {
+    AbyssState.player.lastHpDepletedTime = Date.now();
+    startHpRegenerationTimer();
+    showToast("💀 Vos HP sont épuisés ! L'Abysse vous bloque pendant 1 heure.");
+  }
+}
+
+function startHpRegenerationTimer() {
+  if (!AbyssState.player.lastHpDepletedTime) return;
+
+  clearInterval(AbyssState.hpTimerInterval);
+
+  const warningBanner = document.getElementById('hp-warning-banner');
+  if (warningBanner) warningBanner.style.display = 'block';
+
+  AbyssState.hpTimerInterval = setInterval(() => {
+    const now = Date.now();
+    const elapsed = now - AbyssState.player.lastHpDepletedTime;
+    const remaining = HP_REGEN_COOLDOWN_MS - elapsed;
+
+    if (remaining <= 0) {
+      // Régénération complète après 1h
+      AbyssState.player.hp = AbyssState.player.maxHp;
+      AbyssState.player.lastHpDepletedTime = null;
+      clearInterval(AbyssState.hpTimerInterval);
+      if (warningBanner) warningBanner.style.display = 'none';
+      updatePlayerUI();
+      showToast("❤️ Vos HP ont été totalement régénérés !");
+    } else {
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      const timerElem = document.getElementById('hp-timer');
+      if (timerElem) timerElem.textContent = formatted;
+    }
+  }, 1000);
+}
+
+/* ==========================================================================
+   4. BASE DE DONNÉES DES CATALOGUES & QCMS
+   ========================================================================== */
+
+const ABYSS_DATABASE = {
   penseurs: {
     title: "🧠 PENSEURS",
     subdomains: ["Tous", "Philosophie", "Psychologie", "Histoire", "Sciences", "Littérature"],
     items: [
-      { id: "P01", title: "Nietzsche & Le Surhomme", sub: "Philosophie", rating: "4.9", image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400" },
-      { id: "P02", title: "Les Abysses de Freud", sub: "Psychologie", rating: "4.7", image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=400" },
-      { id: "P03", title: "L'Empire Romain", sub: "Histoire", rating: "4.8", image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400" }
+      {
+        id: "P01",
+        title: "Nietzsche & La Volonté de Puissance",
+        sub: "Philosophie",
+        rating: "4.9",
+        image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500",
+        questions: [
+          {
+            q: "Quel concept nietzschéen désève le dépassement de soi et de la morale traditionnelle ?",
+            options: ["L'Impératif Catégorique", "L'Übermensch (Surhomme)", "Le Leviathan", "Le Contrat Social"],
+            correct: 1,
+            explanation: "L'Übermensch est la figure qui crée ses propres valeurs au-dessus du nihilisme."
+          }
+        ]
+      },
+      {
+        id: "P02",
+        title: "L'Inconscient selon Carl Jung",
+        sub: "Psychologie",
+        rating: "4.8",
+        image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=500",
+        questions: [
+          {
+            q: "Comment Jung nomme-t-il les structures psychiques héréditaires partagées par l'humanité ?",
+            options: ["Les Complexes", "Les Archétypes", "Les Traumatismes", "Les Pulsions"],
+            correct: 1,
+            explanation: "Les archétypes constituent le contenu de l'inconscient collectif."
+          }
+        ]
+      }
     ]
   },
   otaku: {
     title: "🎌 OTAKU",
-    subdomains: ["Tous", "Manga", "Anime", "Jeux vidéo", "Light Novel", "Webtoon"],
+    subdomains: ["Tous", "Manga", "Webtoon", "Anime", "Jeux vidéo", "Light Novel"],
     items: [
-      { id: "O01", title: "Berserk : L'Éclipse", sub: "Manga", rating: "5.0", image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400" },
-      { id: "O02", title: "Monster & Johan Liebert", sub: "Anime", rating: "4.9", image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400" },
-      { id: "O03", title: "Solo Leveling & Monarques", sub: "Webtoon", rating: "4.8", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400" },
-      { id: "O04", title: "Elden Ring & Lore", sub: "Jeux vidéo", rating: "4.9", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400" }
+      {
+        id: "O01",
+        title: "Berserk : L'Éclipse & La Marque",
+        sub: "Manga",
+        rating: "5.0",
+        image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500",
+        questions: [
+          {
+            q: "Dans Berserk, quel artefact invoque la Main de Dieu lors du désespoir absolu ?",
+            options: ["La Pierre Philosophale", "Le Béhélit Pourpre", "L'Œuf du Dragon", "Le Sceau de Godhand"],
+            correct: 1,
+            explanation: "Le Béhélit rouge (ou Œuf du Roi Suprême) appartient à Griffith."
+          },
+          {
+            q: "Quel nom porte l'épée colossale forgée par Godo et maniée par Guts ?",
+            options: ["Dragonslayer (Fend-Dragon)", "Excalibur", "Vorpal", "La Lame d'Ombre"],
+            correct: 0,
+            explanation: "La Dragonslayer était jugée trop lourde et brute pour être maniée par un humain ordinaire."
+          }
+        ]
+      },
+      {
+        id: "O02",
+        title: "Solo Leveling & Les Monarques",
+        sub: "Webtoon",
+        rating: "4.9",
+        image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500",
+        questions: [
+          {
+            q: "Quel est le vrai titre du créateur du Système transmis à Sung Jin-Woo ?",
+            options: ["Le Monarque des Ombres", "L'Architecte", "Le Roi des Démons", "L'Éveillé Suprême"],
+            correct: 1,
+            explanation: "L'Architecte a conçu le système d'interface de jeu pour tester les hôtes d'Ashborn."
+          }
+        ]
+      },
+      {
+        id: "O03",
+        title: "Monster : L'Ombre de Johan Liebert",
+        sub: "Anime",
+        rating: "4.9",
+        image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500",
+        questions: [
+          {
+            q: "Dans quel orphelinat expérimental d'Allemagne de l'Est Johan a-t-il subi son conditionnement ?",
+            options: ["Kindergarten 511", "Spandau 12", "L'Institut Rose", "L'Asile de Prague"],
+            correct: 0,
+            explanation: "Le Kindergarten 511 visait à effacer l'individualité des enfants."
+          }
+        ]
+      }
     ]
   },
   culture: {
     title: "🌍 CULTURE GÉNÉRALE",
-    subdomains: ["Tous", "Géographie", "Cinéma", "Musique", "Technologies", "Sports"],
+    subdomains: ["Tous", "Cinéma", "Technologies", "Musique", "Géographie", "Sports"],
     items: [
-      { id: "C01", title: "Cinéma Dark & Thrillers", sub: "Cinéma", rating: "4.8", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400" },
-      { id: "C02", title: "Intelligence Artificielle", sub: "Technologies", rating: "4.7", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400" }
+      {
+        id: "C01",
+        title: "Thrillers Psychologiques du Cinéma",
+        sub: "Cinéma",
+        rating: "4.8",
+        image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500",
+        questions: [
+          {
+            q: "Qui a réalisé le film culte 'Shutter Island' sorti en 2010 ?",
+            options: ["Christopher Nolan", "Martin Scorsese", "David Fincher", "Denis Villeneuve"],
+            correct: 1,
+            explanation: "Martin Scorsese a dirigé Leonardo DiCaprio dans cette adaptation du roman de Dennis Lehane."
+          }
+        ]
+      }
     ]
   }
 };
 
-// Questions d'épreuves exemple
-const quizQuestions = [
-  {
-    question: "Dans Monster de Naoki Urasawa, quel orphelinat expérimental a vu grandir Johan Liebert ?",
-    options: ["L'Espace 47", "Le Kindergarten 511", "La Rose Rouge", "La Clinique des Ombres"],
-    correct: 1,
-    explanation: "Le Kindergarten 511 visait à créer des soldats idéaux dénués d'émotions."
-  },
-  {
-    question: "Dans Berserk, quel est le talisman qui invoque la Main de Dieu lors de l'Éclipse ?",
-    options: ["L'Œuf du Roi Suprême", "La Clé de l'Abysse", "Le Sceau Céleste", "L'Œil du Néant"],
-    correct: 0,
-    explanation: "Le Béhélit pourpre réagit au désespoir ultime de son porteur."
+/* ==========================================================================
+   5. NAVIGATION EN VUE UNIQUE (SPA) & INTERFACE
+   ========================================================================== */
+
+function navigateTo(viewId) {
+  document.querySelectorAll('.view-section').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = 'none';
+  });
+
+  const target = document.getElementById(viewId);
+  if (target) {
+    target.style.display = 'block';
+    setTimeout(() => target.classList.add('active'), 10);
   }
-];
 
-// ==========================================
-// 2. GESTION DE LA NAVIGATION & VUES (SPA)
-// ==========================================
-let currentCategory = 'otaku';
-let currentSubdomain = 'Tous';
-
-function switchView(viewId) {
-  document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
-  const targetView = document.getElementById(viewId);
-  if (targetView) targetView.classList.add('active');
-
-  // Fermer la sidebar sur mobile
   closeSidebar();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function switchCategory(catKey) {
-  currentCategory = catKey;
-  currentSubdomain = 'Tous';
-  const data = CATALOG_DATA[catKey];
-
+function openCatalog(categoryKey) {
+  AbyssState.currentCategory = categoryKey;
+  AbyssState.currentSubdomain = 'Tous';
+  
+  const data = ABYSS_DATABASE[categoryKey];
   if (!data) return;
 
-  document.getElementById('catalog-title').textContent = data.title;
-  renderSubdomainsBar(data.subdomains);
-  renderPosters();
-  switchView('view-catalog');
+  const catalogTitle = document.getElementById('catalog-title');
+  if (catalogTitle) catalogTitle.textContent = data.title;
+
+  renderSubdomainsFilter(data.subdomains);
+  renderCatalogItems();
+  navigateTo('view-catalog');
 }
 
-function renderSubdomainsBar(subdomains) {
-  const container = document.getElementById('subdomains-bar');
-  container.innerHTML = '';
+function renderSubdomainsFilter(subdomains) {
+  const container = document.querySelector('.horizontal-scroll-filters');
+  if (!container) return;
 
+  container.innerHTML = '';
   subdomains.forEach(sub => {
     const btn = document.createElement('button');
-    btn.className = `sub-tab ${sub === currentSubdomain ? 'active' : ''}`;
+    btn.className = `filter-btn ${sub === AbyssState.currentSubdomain ? 'active' : ''}`;
     btn.textContent = sub;
     btn.onclick = () => {
-      currentSubdomain = sub;
-      renderSubdomainsBar(subdomains);
-      renderPosters();
+      AbyssState.currentSubdomain = sub;
+      renderSubdomainsFilter(subdomains);
+      renderCatalogItems();
     };
     container.appendChild(btn);
   });
 }
 
-function renderPosters() {
-  const container = document.getElementById('posters-grid');
-  container.innerHTML = '';
+function renderCatalogItems() {
+  const container = document.getElementById('qcm-list');
+  if (!container) return;
 
-  const data = CATALOG_DATA[currentCategory];
+  container.innerHTML = '';
+  const data = ABYSS_DATABASE[AbyssState.currentCategory];
   if (!data) return;
 
-  const filteredItems = currentSubdomain === 'Tous' 
-    ? data.items 
-    : data.items.filter(item => item.sub === currentSubdomain);
+  const items = AbyssState.currentSubdomain === 'Tous'
+    ? data.items
+    : data.items.filter(i => i.sub === AbyssState.currentSubdomain);
 
-  filteredItems.forEach(item => {
+  items.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'poster-card';
-    card.onclick = () => startQuizFromCatalog(item.title);
-
+    card.className = 'qcm-card glass-card';
     card.innerHTML = `
-      <div class="poster-image-wrapper">
-        <img src="${item.image}" alt="${item.title}">
-        <span class="poster-tag">${item.sub}</span>
-        <span class="poster-rating">★ ${item.rating}</span>
-      </div>
-      <div class="poster-info">
-        <h4 class="poster-title">${item.title}</h4>
-        <span class="poster-sub">5 Questions • 1000 XP</span>
+      <div class="qcm-img" style="background-image: url('${item.image}'); background-size: cover; background-position: center;"></div>
+      <div class="qcm-info">
+        <h4>${item.title}</h4>
+        <span class="qcm-meta">${item.sub} • ${item.questions.length} Questions • ★ ${item.rating}</span>
+        <button class="btn-start-qcm" onclick="startQuiz('${item.id}')">Affronter l'Épreuve</button>
       </div>
     `;
     container.appendChild(card);
   });
 }
 
-// ==========================================
-// 3. MENU LATÉRAL (DRAWER)
-// ==========================================
-const menuToggleBtn = document.getElementById('menu-toggle');
-const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
+/* ==========================================================================
+   6. MOTEUR DE QUIZ / ÉPREUVES
+   ========================================================================== */
+
+function startQuiz(itemId) {
+  if (AbyssState.player.hp <= 0) {
+    showToast("⚠️ Vos HP sont épuisés. Attendez la fin de la régénération.");
+    return;
+  }
+
+  // Recherche de l'épreuve dans la base
+  let foundItem = null;
+  Object.keys(ABYSS_DATABASE).forEach(cat => {
+    const match = ABYSS_DATABASE[cat].items.find(i => i.id === itemId);
+    if (match) foundItem = match;
+  });
+
+  if (!foundItem) return;
+
+  AbyssState.activeQuiz = foundItem;
+  AbyssState.currentQuestionIndex = 0;
+  
+  navigateTo('view-quiz');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  AbyssState.isAnswered = false;
+  AbyssState.selectedOption = null;
+  AbyssState.timeLeft = 15;
+
+  const quiz = AbyssState.activeQuiz;
+  const qData = quiz.questions[AbyssState.currentQuestionIndex];
+
+  // Remplissage UI
+  const qNumElem = document.getElementById('question-number');
+  const qTextElem = document.getElementById('question-text');
+  const expBox = document.getElementById('explanation-box');
+
+  if (qNumElem) qNumElem.textContent = `QUESTION ${AbyssState.currentQuestionIndex + 1} / ${quiz.questions.length}`;
+  if (qTextElem) qTextElem.textContent = qData.q;
+  if (expBox) expBox.classList.add('hidden');
+
+  const container = document.getElementById('options-container');
+  if (container) {
+    container.innerHTML = '';
+    qData.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = `${String.fromCharCode(65 + idx)}) ${opt}`;
+      btn.onclick = () => selectOption(idx);
+      container.appendChild(btn);
+    });
+  }
+
+  startQuestionTimer();
+}
+
+function startQuestionTimer() {
+  clearInterval(AbyssState.questionTimer);
+  const timerBadge = document.getElementById('timer-badge');
+
+  AbyssState.questionTimer = setInterval(() => {
+    AbyssState.timeLeft--;
+    if (timerBadge) timerBadge.textContent = `⏱️ ${AbyssState.timeLeft}s`;
+
+    if (AbyssState.timeLeft <= 0) {
+      clearInterval(AbyssState.questionTimer);
+      if (!AbyssState.isAnswered) {
+        showToast("⏳ Temps écoulé ! -20 HP");
+        takeDamage(20);
+        showExplanation();
+      }
+    }
+  }, 1000);
+}
+
+function selectOption(idx) {
+  if (AbyssState.isAnswered) return;
+  AbyssState.isAnswered = true;
+  clearInterval(AbyssState.questionTimer);
+
+  const qData = AbyssState.activeQuiz.questions[AbyssState.currentQuestionIndex];
+  const buttons = document.querySelectorAll('#options-container .option-btn');
+
+  if (idx === qData.correct) {
+    buttons[idx].classList.add('correct');
+    addXp(500);
+  } else {
+    buttons[idx].classList.add('wrong');
+    buttons[qData.correct].classList.add('correct');
+    takeDamage(20);
+  }
+
+  showExplanation();
+}
+
+function showExplanation() {
+  const qData = AbyssState.activeQuiz.questions[AbyssState.currentQuestionIndex];
+  const expBox = document.getElementById('explanation-box');
+  const expText = document.getElementById('explanation-text');
+
+  if (expBox && expText) {
+    expText.textContent = qData.explanation;
+    expBox.classList.remove('hidden');
+  }
+
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.disabled = false;
+}
+
+function nextQuestion() {
+  AbyssState.currentQuestionIndex++;
+  const quiz = AbyssState.activeQuiz;
+
+  if (AbyssState.currentQuestionIndex < quiz.questions.length) {
+    loadQuestion();
+  } else {
+    showToast("🎉 Épreuve terminée !");
+    navigateTo('view-home');
+  }
+}
+
+/* ==========================================================================
+   7. MISE À JOUR DE L'INTERFACE UTILISATEUR & MODAL
+   ========================================================================== */
+
+function updatePlayerUI() {
+  const p = AbyssState.player;
+  const level = getPlayerLevel(p.xp);
+  const xpCurrentLvl = getXpForCurrentLevel(level);
+  const xpNextLvl = getXpForNextLevel(level);
+  
+  const xpProgressPercent = Math.min(100, Math.max(0, ((p.xp - xpCurrentLvl) / (xpNextLvl - xpCurrentLvl)) * 100));
+  const hpPercent = (p.hp / p.maxHp) * 100;
+
+  // Mise à jour des textes
+  const elements = {
+    'player-level': level,
+    'menu-user-name': p.username,
+    'home-username': p.username,
+    'profile-page-name': p.username,
+    'profile-page-bio': p.bio,
+    'pv-text': `${p.hp} / ${p.maxHp}`,
+    'xp-text': `${p.xp} / ${xpNextLvl} XP`
+  };
+
+  Object.keys(elements).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = elements[id];
+  });
+
+  // Barre de progression
+  const xpFills = document.querySelectorAll('.xp-fill, .xp-bar');
+  const hpFills = document.querySelectorAll('.hp-fill, .hp-bar');
+
+  xpFills.forEach(bar => bar.style.width = `${xpProgressPercent}%`);
+  hpFills.forEach(bar => bar.style.width = `${hpPercent}%`);
+}
 
 function openSidebar() {
-  sidebar.classList.add('open');
-  sidebarOverlay.classList.add('active');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.add('active');
+  if (overlay) overlay.classList.add('active');
 }
 
 function closeSidebar() {
-  sidebar.classList.remove('open');
-  sidebarOverlay.classList.remove('active');
-}
-
-menuToggleBtn.addEventListener('click', openSidebar);
-sidebarOverlay.addEventListener('click', closeSidebar);
-
-// ==========================================
-// 4. MOTEUR D'ÉPREUVE (QUIZ INTEGRATION)
-// ==========================================
-let currentQuizIndex = 0;
-let isQuestionAnswered = false;
-
-function startQuizFromCatalog(title) {
-  document.getElementById('quiz-category-tag').textContent = title.toUpperCase();
-  currentQuizIndex = 0;
-  switchView('view-quiz');
-  loadQuizQuestion();
-}
-
-function loadQuizQuestion() {
-  isQuestionAnswered = false;
-  const q = quizQuestions[currentQuizIndex];
-  
-  document.getElementById('question-number').textContent = `QUESTION ${currentQuizIndex + 1} / ${quizQuestions.length}`;
-  document.getElementById('question-text').textContent = q.question;
-  document.getElementById('explanation-box').classList.add('hidden');
-
-  const optionsContainer = document.getElementById('options-container');
-  optionsContainer.innerHTML = '';
-
-  q.options.forEach((opt, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.textContent = `${String.fromCharCode(65 + idx)}) ${opt}`;
-    btn.onclick = () => handleSelectOption(idx);
-    optionsContainer.appendChild(btn);
-  });
-
-  document.getElementById('next-btn').disabled = true;
-}
-
-function handleSelectOption(selectedIndex) {
-  if (isQuestionAnswered) return;
-  isQuestionAnswered = true;
-
-  const q = quizQuestions[currentQuizIndex];
-  const buttons = document.querySelectorAll('#options-container .option-btn');
-
-  buttons.forEach((btn, idx) => {
-    if (idx === q.correct) btn.classList.add('correct');
-    else if (idx === selectedIndex) btn.classList.add('wrong');
-  });
-
-  const expBox = document.getElementById('explanation-box');
-  document.getElementById('explanation-text').textContent = q.explanation;
-  expBox.classList.remove('hidden');
-
-  document.getElementById('next-btn').disabled = false;
-}
-
-document.getElementById('next-btn').onclick = () => {
-  currentQuizIndex++;
-  if (currentQuizIndex < quizQuestions.length) {
-    loadQuizQuestion();
-  } else {
-    showToast('🎉 Épreuve terminée avec succès !');
-    switchView('view-home');
-  }
-};
-
-function confirmExitQuiz() {
-  if (confirm("Voulez-vous vraiment quitter l'épreuve ?")) {
-    switchView('view-home');
-  }
-}
-
-// ==========================================
-// 5. PROFIL & MODAL
-// ==========================================
-function openEditModal() {
-  document.getElementById('edit-modal').classList.add('active');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal').classList.remove('active');
-}
-
-function saveProfileChanges() {
-  const newUsername = document.getElementById('edit-input-username').value;
-  const newSeed = document.getElementById('edit-input-avatar').value;
-  const newBio = document.getElementById('edit-input-bio').value;
-
-  const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(newSeed)}`;
-
-  document.getElementById('home-username').textContent = newUsername;
-  document.getElementById('menu-user-name').textContent = newUsername;
-  document.getElementById('profile-page-name').textContent = newUsername;
-
-  document.getElementById('header-avatar').src = avatarUrl;
-  document.getElementById('menu-user-avatar').src = avatarUrl;
-  document.getElementById('home-avatar').src = avatarUrl;
-  document.getElementById('profile-page-avatar').src = avatarUrl;
-
-  document.getElementById('profile-page-bio').textContent = newBio;
-
-  closeEditModal();
-  showToast('Profil mis à jour !');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('active');
+  if (overlay) overlay.classList.remove('active');
 }
 
 function showToast(msg) {
-  const toast = document.getElementById('toast');
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
   toast.textContent = msg;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
+
+// ==========================================
+// 8. INITIALISATION AU CHARGEMENT DE LA PAGE
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Événements d'ouverture/fermeture Sidebar
+  const openSidebarBtn = document.getElementById('open-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+
+  if (openSidebarBtn) openSidebarBtn.onclick = openSidebar;
+  if (overlay) overlay.onclick = closeSidebar;
+
+  // Bouton de question suivante
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.onclick = nextQuestion;
+
+  // Initialisation du Profil & UI
+  updatePlayerUI();
+});
