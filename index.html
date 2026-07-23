@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="styles/layout.css">
   <link rel="stylesheet" href="styles/components.css">
   <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/auth.css">
+  <link rel="stylesheet" href="styles/community.css">
 </head>
 <body>
   <div id="app">
@@ -33,6 +35,8 @@
           <div class="player-status">
             <span id="navXP">0</span> XP
           </div>
+          <button class="btn btn-sm" id="authBtn" style="margin-left: 1rem;">Se Connecter</button>
+          <button class="btn btn-sm" id="createPostBtn" style="margin-left: 0.5rem; display: none;">+ Post</button>
         </div>
       </div>
     </nav>
@@ -214,6 +218,7 @@
           <div class="community-grid">
             <div class="community-panel">
               <h3>Réflexions Récentes</h3>
+              <button class="btn btn-primary" id="newPostBtn" style="width: 100%; margin-bottom: 1rem; display: none;">Créer une Réflexion</button>
               <div id="communityFeed" class="community-feed">
                 <p class="empty-state">Sois le premier à partager une réflexion !</p>
               </div>
@@ -276,13 +281,17 @@
   <!-- Modals & Dialogs -->
   <div id="modal-container" class="modal-container"></div>
 
-  <!-- Scripts -->
+  <!-- Scripts - Module Loading Order Critical -->
   <script src="modules/constants.js"></script>
   <script src="modules/data-manager.js"></script>
   <script src="modules/player.js"></script>
   <script src="modules/domains.js"></script>
   <script src="modules/ui-manager.js"></script>
   <script src="modules/events.js"></script>
-  <script src="modules/app.js"></script>
+  <script type="module" src="modules/firebase-config.js"></script>
+  <script type="module" src="modules/cloud-data-manager.js"></script>
+  <script src="modules/auth-ui.js"></script>
+  <script src="modules/community-system.js"></script>
+  <script type="module" src="modules/app-cloud.js"></script>
 </body>
 </html>
