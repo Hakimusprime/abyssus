@@ -3,39 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abyssus Banque - Quiz & Classement</title>
+    <title>Abyssus - Banque QCM & Rank System</title>
+    
+    <!-- Polices Luxe (Cinzel & Montserrat) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 
-    <!-- Firebase SDKs (Compat) -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
     <main class="app-container">
+        <!-- En-tête de marque -->
+        <header class="main-header">
+            <h1 class="gold-gradient-title">ABYSSUS BANQUE</h1>
+            <p class="subtitle">L'Épreuve Master QCM • Édition Rangs & Titres</p>
+        </header>
+
         <!-- Section Quiz -->
-        <section class="quiz-container">
-            <h1>Abyssus Quiz</h1>
-            <button id="start-btn" onclick="startNewGame()">Lancer une partie</button>
+        <section class="quiz-container luxury-card">
+            <div id="quiz-intro">
+                <h2>Testez Vos Connaissances</h2>
+                <p>Accumulez de l'XP et gravissez les échelons du classement général.</p>
+                <button id="start-btn" onclick="startNewGame()">Commencer l'Épreuve</button>
+            </div>
 
             <div id="quiz-box" style="display: none;">
-                <div id="quiz-progress" class="progress-bar">Question 1 / 10</div>
+                <div id="quiz-progress" class="progress-badge">Question 1 / 10</div>
                 <h2 id="question-text">Chargement de la question...</h2>
                 <div id="options-container" class="options-grid"></div>
             </div>
         </section>
 
         <!-- Section Classement -->
-        <section class="leaderboard-container">
-            <h2>Classement Général (Temps Réel)</h2>
+        <section class="leaderboard-container luxury-card">
+            <h2 class="gold-gradient-title">Tableau d'Honneur (Temps Réel)</h2>
             <div id="leaderboard-list">
-                <!-- Les participants s'afficheront ici -->
+                <!-- Chargement dynamique depuis Firebase -->
             </div>
         </section>
     </main>
 
-    <!-- Fichiers JS -->
+    <!-- Fichiers JS du projet -->
     <script src="quiz_questions.js"></script>
+    <script src="reflection_questions.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
