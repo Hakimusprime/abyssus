@@ -6,7 +6,7 @@
 
 // ⚠️ Code d'accès Zone Créateur — friction seulement, pas une vraie sécurité
 // (visible dans ce fichier). Change-le avant de partager le lien largement.
-const ADMIN_PASSPHRASE = "abyssus-createur";
+const ADMIN_PASSPHRASE = "hakimus";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7OxNqHBiVsCNxdhatWRY1WUHYPaO1AmM",
