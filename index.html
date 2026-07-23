@@ -1,194 +1,41 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Abyssus</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abyssus Banque - Quiz & Classement</title>
+    <link rel="stylesheet" href="style.css">
 
-  <!-- Polices Immersives -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="abyss-theme">
+<body>
 
-  <!-- Fond Abyssal -->
-  <div class="abyss-background">
-    <div class="abyss-glow"></div>
-  </div>
+    <main class="app-container">
+        <!-- Section Quiz -->
+        <section class="quiz-container">
+            <h1>Abyssus Quiz</h1>
+            <button id="start-btn" onclick="startNewGame()">Lancer une partie</button>
 
-  <!-- EN-TÊTE MOBILE -->
-  <header class="top-nav">
-    <button class="btn-icon" id="open-sidebar" onclick="openSidebar()" aria-label="Menu">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-    </button>
-    <div class="brand-logo" onclick="navigateTo('view-home')">
-      <span class="logo-abyssus">ABYSSUS</span>
-    </div>
-    <div class="player-mini-status" onclick="navigateTo('view-profile')">
-      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=hakimusprime" alt="Avatar" class="avatar-sm">
-    </div>
-  </header>
+            <div id="quiz-box" style="display: none;">
+                <div id="quiz-progress" class="progress-bar">Question 1 / 10</div>
+                <h2 id="question-text">Chargement de la question...</h2>
+                <div id="options-container" class="options-grid"></div>
+            </div>
+        </section>
 
-  <!-- MENU LATÉRAL -->
-  <div id="sidebar-overlay" class="overlay" onclick="closeSidebar()"></div>
-  <aside id="sidebar" class="glass-sidebar">
-    <div class="sidebar-header">
-      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=hakimusprime" alt="hakimusprime" class="avatar-lg">
-      <h3 class="player-name" id="menu-user-name">hakimusprime</h3>
-      <span class="player-title">Explorateur des Ombres</span>
-      
-      <div class="status-container">
-        <div class="status-row">
-          <span class="status-label">Niv. <span id="player-level">1</span></span>
-          <div class="progress-track"><div class="progress-fill xp-fill" style="width: 0%;"></div></div>
-        </div>
-        <div class="status-row">
-          <span class="status-label">HP <span id="pv-text">100 / 100</span></span>
-          <div class="progress-track"><div class="progress-fill hp-fill" style="width: 100%;"></div></div>
-        </div>
-      </div>
-    </div>
+        <!-- Section Classement -->
+        <section class="leaderboard-container">
+            <h2>Classement Général (Temps Réel)</h2>
+            <div id="leaderboard-list">
+                <!-- Les participants s'afficheront ici -->
+            </div>
+        </section>
+    </main>
 
-    <nav class="sidebar-nav">
-      <a href="#" onclick="navigateTo('view-home')" class="nav-item active"><span class="icon">🏠</span> Accueil</a>
-      <a href="#" onclick="navigateTo('view-profile')" class="nav-item"><span class="icon">👤</span> Mon Profil</a>
-      
-      <div class="nav-section-title">LES DOMAINES</div>
-      <a href="#" onclick="openCatalog('penseurs')" class="nav-item"><span class="icon">🧠</span> Penseurs</a>
-      <a href="#" onclick="openCatalog('otaku')" class="nav-item"><span class="icon">🎌</span> Otaku</a>
-      <a href="#" onclick="openCatalog('culture')" class="nav-item"><span class="icon">🌍</span> Culture Générale</a>
-      
-      <div class="nav-section-title">SYSTÈME</div>
-      <a href="#" onclick="navigateTo('view-rankings')" class="nav-item"><span class="icon">🏆</span> Classements</a>
-      <a href="#" class="nav-item"><span class="icon">🏅</span> Reliques</a>
-      <a href="#" class="nav-item"><span class="icon">🎯</span> Titres</a>
-      <a href="#" class="nav-item"><span class="icon">🎒</span> Inventaire</a>
-      <a href="#" class="nav-item"><span class="icon">👥</span> Communauté</a>
-      <a href="#" class="nav-item"><span class="icon">⚙</span> Paramètres</a>
-      <a href="#" class="nav-item text-danger"><span class="icon">🚪</span> Déconnexion</a>
-    </nav>
-  </aside>
-
-  <!-- CONTENU PRINCIPAL -->
-  <main class="main-container">
-
-    <!-- 1. PAGE D'ACCUEIL -->
-    <section id="view-home" class="view-section active">
-      <div class="welcome-banner glass-card">
-        <h1>ABYSSUS</h1>
-        <p>Le savoir est une arme. Explorez la profondeur des connaissances.</p>
-        <div class="hp-status-warning" id="hp-warning-banner" style="display: none;">
-          ⚠️ Vous êtes à court de HP. Régénération : <span id="hp-timer">59:59</span>
-        </div>
-      </div>
-
-      <div class="categories-grid">
-        <!-- OTAKU -->
-        <div class="category-card otaku-card glass-card" onclick="openCatalog('otaku')">
-          <div class="card-image-bg"></div>
-          <div class="card-content">
-            <span class="badge-hot">Populaire</span>
-            <h2>OTAKU</h2>
-            <p>Manga, Anime, Light Novel, Webtoon...</p>
-            <button class="btn-explorer">Explorer →</button>
-          </div>
-        </div>
-
-        <!-- PENSEURS -->
-        <div class="category-card penseurs-card glass-card" onclick="openCatalog('penseurs')">
-          <div class="card-image-bg"></div>
-          <div class="card-content">
-            <h2>PENSEURS</h2>
-            <p>Philosophie, Psychologie, Histoire, Sciences...</p>
-            <button class="btn-explorer">Explorer →</button>
-          </div>
-        </div>
-
-        <!-- CULTURE GENERALE -->
-        <div class="category-card culture-card glass-card" onclick="openCatalog('culture')">
-          <div class="card-image-bg"></div>
-          <div class="card-content">
-            <h2>CULTURE G.</h2>
-            <p>Cinéma, Musique, Technologies, Sports...</p>
-            <button class="btn-explorer">Explorer →</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. CATALOGUE DES DOMAINES -->
-    <section id="view-catalog" class="view-section" style="display:none;">
-      <div class="catalog-header">
-        <button class="btn-back" onclick="goBack()">← Retour</button>
-        <h2 id="catalog-title">CATALOGUE</h2>
-      </div>
-
-      <div class="horizontal-scroll-filters"></div>
-
-      <div class="qcm-grid" id="qcm-list"></div>
-    </section>
-
-    <!-- 3. INTERFACE DE QUIZ / ÉPREUVE -->
-    <section id="view-quiz" class="view-section" style="display:none;">
-      <div class="quiz-header glass-card">
-        <button class="btn-back" onclick="goBack()">✕ Quitter</button>
-        <span id="question-number" class="quiz-step-title">QUESTION 1 / 10</span>
-        <span id="timer-badge" class="timer-badge">⏱️ 15s</span>
-      </div>
-
-      <div class="quiz-card glass-card">
-        <h3 id="question-text" class="question-text">Chargement de la question...</h3>
-        <div id="options-container" class="options-grid"></div>
-      </div>
-
-      <div id="explanation-box" class="explanation-box glass-card hidden">
-        <h4>💡 Explication :</h4>
-        <p id="explanation-text"></p>
-        <button id="next-btn" class="btn-next" onclick="nextQuestion()">Question Suivante →</button>
-      </div>
-    </section>
-
-    <!-- 4. PROFIL -->
-    <section id="view-profile" class="view-section" style="display:none;">
-      <div class="catalog-header">
-        <button class="btn-back" onclick="goBack()">← Retour</button>
-        <h2>PROFIL JOUEUR</h2>
-      </div>
-      <div class="profile-card glass-card">
-        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=hakimusprime" alt="Avatar" class="avatar-lg">
-        <h3 id="profile-page-name">hakimusprime</h3>
-        <p id="profile-page-bio" class="profile-bio">Explorateur passionné d'Abyssus.</p>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-value" id="xp-text">0 XP</span>
-            <span class="stat-label">Expérience</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. CLASSEMENTS -->
-    <section id="view-rankings" class="view-section" style="display:none;">
-      <div class="catalog-header">
-        <button class="btn-back" onclick="goBack()">← Retour</button>
-        <h2>CLASSEMENT GÉNÉRAL</h2>
-      </div>
-      <div class="rankings-list glass-card">
-        <div class="ranking-item active-player">
-          <span class="rank">#1</span>
-          <span class="player">hakimusprime</span>
-          <span class="xp-val">Niv. Max</span>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- FICHIERS JS DE TON TÉLÉPHONE EN SÉQUENCE -->
-  <script src="quiz_questions.js"></script>
-  <script src="script.js"></script>
+    <!-- Fichiers JS -->
+    <script src="quiz_questions.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
