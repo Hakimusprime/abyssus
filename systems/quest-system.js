@@ -1,17 +1,12 @@
 "use strict";
 
 /**
- * Abyssus Quest System — Système de quêtes modulaire
- *
- * Types de quêtes :
- * - Quotidiennes : se réinitialisent chaque jour
- * - Hebdomadaires : se réinitialisent chaque semaine
- * - Secrètes : découvertes par le joueur via des actions spécifiques
- * - Légendaires : quêtes longues en plusieurs étapes
- *
- * Architecture : data-driven. Pour ajouter une quête, ajouter un objet à QUESTS.
- * Liaison avec AbyssusEvents pour progresser automatiquement.
+ * ABYSSUS — Quest System
+ * Emplacement : /systems/quest-system.js
+ * 
+ * Système de quêtes modulaire et data-driven (Hybride LocalStorage / Firestore)
  */
+
 const AbyssusQuestSystem = (() => {
   // ── État ──
   let activeQuests = [];
@@ -180,9 +175,10 @@ const AbyssusQuestSystem = (() => {
   ];
 
   // ── Initialisation ──
-  function init(userData) {
-    completedQuestIds = userData?.quests?.completed || {};
-    questLog = userData?.quests?.progress || {};
+  function init(userSource) {
+    const data = userSource || (typeof userData !== 'undefined' ? userData : {});
+    completedQuestIds = data?.quests?.completed || {};
+    questLog = data?.quests?.progress || {};
     activeQuests = [];
 
     // Initialiser les quêtes actives
@@ -192,17 +188,21 @@ const AbyssusQuestSystem = (() => {
 
       activeQuests.push({
         ...quest,
-        progress: questLog[quest.id] || quest.steps.map(() => 0),
-        startedAt: (questLog[quest.id] && questLog[quest.id].startedAt) || Date.now(),
+        progress: questLog[quest.id]?.progress || quest.steps.map(() => 0),
+        startedAt: questLog[quest.id]?.startedAt || Date.now(),
       });
     });
 
-    // Hook événements
+    // Hook événements (si AbyssusEvents existe)
     if (typeof AbyssusEvents !== 'undefined') {
-      AbyssusEvents.on(AbyssusEvents.EVENTS.QUIZ_ANSWER, onQuizAnswer);
-      AbyssusEvents.on(AbyssusEvents.EVENTS.REFLECTION_SAVED, onReflectionSaved);
-      AbyssusEvents.on(AbyssusEvents.EVENTS.BOSS_END, onBossEnd);
-      AbyssusEvents.on(AbyssusEvents.EVENTS.EVENT_TRIGGER, onEventTriggered);
+      try {
+        AbyssusEvents.on(AbyssusEvents.EVENTS.QUIZ_ANSWER, onQuizAnswer);
+        AbyssusEvents.on(AbyssusEvents.EVENTS.REFLECTION_SAVED, onReflectionSaved);
+        AbyssusEvents.on(AbyssusEvents.EVENTS.BOSS_END, onBossEnd);
+        AbyssusEvents.on(AbyssusEvents.EVENTS.EVENT_TRIGGER, onEventTriggered);
+      } catch (e) {
+        console.warn('[QuestSystem] Erreur liaison événements:', e);
+      }
     }
   }
 
@@ -213,7 +213,6 @@ const AbyssusQuestSystem = (() => {
     }
     progressQuests('total_answers', 1);
 
-    // Précision parfaite
     if (data.correct && data.firstAttempt) {
       progressQuests('perfect_95', 1);
     }
@@ -230,7 +229,7 @@ const AbyssusQuestSystem = (() => {
   }
 
   function onEventTriggered(data) {
-    // Pas de progression directe par événement pour l'instant
+    // Événement générique optionnel
   }
 
   // ── Progresser les quêtes ──
@@ -242,11 +241,9 @@ const AbyssusQuestSystem = (() => {
         if (step.objective === objective) {
           quest.progress[idx] = (quest.progress[idx] || 0) + amount;
 
-          // Vérifier si l'étape est complétée
           if (quest.progress[idx] >= step.count) {
             quest.progress[idx] = step.count;
 
-            // Vérifier si toutes les étapes sont complétées
             const allDone = quest.steps.every((s, i) => (quest.progress[i] || 0) >= s.count);
             if (allDone) {
               completeQuest(quest);
@@ -256,7 +253,6 @@ const AbyssusQuestSystem = (() => {
       });
     });
 
-    // Sauvegarder la progression
     saveProgress();
   }
 
@@ -264,22 +260,36 @@ const AbyssusQuestSystem = (() => {
   async function completeQuest(quest) {
     if (quest.completed) return;
     quest.completed = true;
+    completedQuestIds[quest.id] = {
+      completedAt: new Date().toISOString(),
+    };
 
     const totalXP = quest.steps.reduce((sum, s) => sum + (s.xp || 0), 0) + (quest.rewards.xp || 0);
 
-    // Notification
-    const notifyFn = window.notify || (msg => { if (window.queueNotify) window.queueNotify(msg); });
+    // Notification système
+    const notifyFn = window.notify || (msg => { if (typeof notify === 'function') notify(msg); });
     notifyFn(`🏆 Quête terminée : ${quest.name} ! +${totalXP} XP`);
 
-    // Appliquer les récompenses Firestore
-    if (window.currentUid) {
+    // 1. Mise à jour Locale (`userData` / `script.js`)
+    if (typeof userData !== 'undefined') {
+      if (typeof gainXP === 'function') {
+        gainXP(totalXP);
+      } else {
+        userData.xp = (userData.xp || 0) + totalXP;
+      }
+      
+      if (!userData.quests) userData.quests = { completed: {}, progress: {} };
+      userData.quests.completed[quest.id] = completedQuestIds[quest.id];
+
+      if (typeof saveUserData === 'function') saveUserData();
+    }
+
+    // 2. Persistance Firestore si connecté
+    if (typeof firebase !== 'undefined' && window.currentUid) {
       try {
         const fb = firebase.firestore();
         const update = {
-          [`quests.completed.${quest.id}`]: {
-            completedAt: new Date().toISOString(),
-            totalXP: totalXP,
-          },
+          [`quests.completed.${quest.id}`]: completedQuestIds[quest.id],
           xp: firebase.firestore.FieldValue.increment(totalXP),
         };
         if (quest.rewards.title) {
@@ -291,11 +301,11 @@ const AbyssusQuestSystem = (() => {
         }
         await fb.collection('users').doc(window.currentUid).update(update);
       } catch (e) {
-        console.warn('[QuestSystem] Erreur complétion:', e);
+        console.warn('[QuestSystem] Erreur complétion Firestore:', e);
       }
     }
 
-    // Émettre l'événement
+    // Émettre l'événement global
     if (typeof AbyssusEvents !== 'undefined') {
       AbyssusEvents.emit(AbyssusEvents.EVENTS.EVENT_TRIGGER, {
         type: 'quest',
@@ -318,13 +328,12 @@ const AbyssusQuestSystem = (() => {
       startedAt: Date.now(),
     });
 
+    saveProgress();
     return true;
   }
 
   // ── Sauvegarder la progression ──
   function saveProgress() {
-    if (!window.currentUid) return;
-
     const progress = {};
     activeQuests.forEach(quest => {
       progress[quest.id] = {
@@ -334,14 +343,25 @@ const AbyssusQuestSystem = (() => {
       };
     });
 
-    // Throttled save via Firestore
-    try {
-      const fb = firebase.firestore();
-      fb.collection('users').doc(window.currentUid).update({
-        quests: { progress, completed: completedQuestIds }
-      });
-    } catch (e) {
-      // Firestore silently — rate limits will handle
+    // Sauvegarde locale
+    if (typeof userData !== 'undefined') {
+      if (!userData.quests) userData.quests = {};
+      userData.quests.progress = progress;
+      userData.quests.completed = completedQuestIds;
+      if (typeof saveUserData === 'function') saveUserData();
+    }
+
+    // Sauvegarde Firestore optionnelle
+    if (typeof firebase !== 'undefined' && window.currentUid) {
+      try {
+        const fb = firebase.firestore();
+        fb.collection('users').doc(window.currentUid).update({
+          'quests.progress': progress,
+          'quests.completed': completedQuestIds
+        });
+      } catch (e) {
+        // Silencieux pour éviter de saturer la console en cas de rate-limit
+      }
     }
   }
 
@@ -352,7 +372,7 @@ const AbyssusQuestSystem = (() => {
 
     const active = activeQuests.filter(q => !q.completed);
     if (active.length === 0) {
-      container.innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">Aucune quête active. Continue d\'explorer l\'Abîme...</p>';
+      container.innerHTML = '<p style="color:var(--text-dim, #888); font-size:0.85rem; text-align:center; padding:1rem;">Aucune quête active. Continue d\'explorer l\'Abîme...</p>';
       return;
     }
 
@@ -362,30 +382,30 @@ const AbyssusQuestSystem = (() => {
         const done = progress >= step.count;
         const pct = Math.min(100, (progress / step.count) * 100);
         return `
-          <div class="quest-step ${done ? 'done' : ''}">
+          <div class="quest-step ${done ? 'done' : ''}" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem; font-size:0.8rem;">
             <span class="step-icon">${done ? '✅' : '⬜'}</span>
-            <div class="step-info">
-              <span class="step-text">${step.objective.replace(/_/g, ' ')}</span>
-              <div class="step-bar">
-                <span style="width:${pct}%"></span>
+            <div class="step-info" style="flex:1;">
+              <span class="step-text" style="color:var(--text-main);">${step.objective.replace(/_/g, ' ')}</span>
+              <div class="step-bar" style="background:var(--bg-card, #222); height:4px; border-radius:2px; margin-top:2px; overflow:hidden;">
+                <span style="display:block; height:100%; width:${pct}%; background:var(--accent, #6366f1); transition:width 0.3s;"></span>
               </div>
-              <small>${progress}/${step.count}</small>
+              <small style="color:var(--text-dim);">${progress}/${step.count}</small>
             </div>
           </div>
         `;
       }).join('');
 
       return `
-        <div class="quest-card ${quest.type}">
-          <div class="quest-header">
-            <span class="quest-icon">${quest.icon || '📋'}</span>
-            <span class="quest-type">${quest.type}</span>
+        <div class="quest-card ${quest.type}" style="background:var(--bg-surface, #111); border:1px solid var(--border-color, #333); border-radius:8px; padding:1rem; margin-bottom:0.8rem;">
+          <div class="quest-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+            <span class="quest-icon" style="font-size:1.2rem;">${quest.icon || '📋'}</span>
+            <span class="quest-type" style="font-size:0.7rem; text-transform:uppercase; background:var(--bg-card); padding:2px 6px; border-radius:4px; color:var(--text-dim);">${quest.type}</span>
           </div>
-          <strong class="quest-name">${quest.name}</strong>
-          <p class="quest-desc">${quest.description}</p>
-          <div class="quest-steps">${allSteps}</div>
-          <div class="quest-reward">
-            <small>🏆 ${quest.rewards.xp || 0} XP ${quest.rewards.title ? '· Titre: ' + quest.rewards.title : ''}</small>
+          <strong class="quest-name" style="display:block; color:var(--text-main); margin-bottom:0.2rem;">${quest.name}</strong>
+          <p class="quest-desc" style="color:var(--text-dim); font-size:0.85rem; margin-bottom:0.6rem;">${quest.description}</p>
+          <div class="quest-steps" style="margin-bottom:0.6rem;">${allSteps}</div>
+          <div class="quest-reward" style="border-top:1px dashed var(--border-color, #333); padding-top:0.4rem;">
+            <small style="color:var(--accent-light, #818cf8);">🏆 ${quest.rewards.xp || 0} XP ${quest.rewards.title ? '· Titre: ' + quest.rewards.title : ''}</small>
           </div>
         </div>
       `;
