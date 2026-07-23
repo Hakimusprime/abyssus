@@ -1,0 +1,8 @@
+    <!-- Auth Button in Header -->
+    <div class="navbar-player">
+      <div class="player-level">Niv. <span id="navLevel">1</span></div>
+      <div class="player-status">
+        <span id="navXP">0</span> XP
+      </div>
+      <button class="btn btn-sm" id="authBtn" style="margin-left: 1rem;">Se Connecter</button>
+    </div>

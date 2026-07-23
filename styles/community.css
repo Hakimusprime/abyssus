@@ -1,0 +1,81 @@
+/* Community Post Styles */
+.post-form-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  backdrop-filter: blur(5px);
+}
+
+.post-form {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  max-width: 600px;
+  width: 90%;
+  position: relative;
+  box-shadow: var(--shadow-xl);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.post-form h2 {
+  margin-bottom: var(--space-lg);
+  color: var(--primary-light);
+}
+
+.post-meta {
+  display: flex;
+  gap: var(--space-md);
+  margin: var(--space-md) 0;
+  flex-wrap: wrap;
+}
+
+.tag {
+  display: inline-block;
+  padding: var(--space-sm) var(--space-md);
+  background-color: rgba(124, 58, 237, 0.2);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--primary-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.post-footer {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+
+.community-panel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.community-panel h3 {
+  margin-bottom: var(--space-lg);
+  color: var(--primary-light);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.community-panel button {
+  width: 100%;
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 480px) {
+  .post-form {
+    padding: var(--space-lg);
+  }
+}
