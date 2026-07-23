@@ -1,7 +1,22 @@
+/**
+ * =================================================================
+ * ABYSSUS — Style Global & Ambiance Luxe et Abyss
+ * Version unifiée pour s'adapter parfaitement aux composants HTML/JS
+ * =================================================================
+ */
 
-/* ==========================================
-   STYLE GLOBAL & AMBIANCE LUXE ET ABYSS
-   ========================================== */
+:root {
+  --bg-main: #080410;
+  --bg-surface: rgba(20, 12, 35, 0.75);
+  --bg-card: #18181b;
+  --border-color: rgba(212, 175, 55, 0.25);
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --accent: #7c3aed;
+  --accent-light: #818cf8;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -46,23 +61,42 @@ body {
 
 .subtitle {
     font-size: 0.95rem;
-    color: #94a3b8;
+    color: var(--text-dim);
     letter-spacing: 1px;
     margin-top: 5px;
 }
 
 /* ==========================================
-   CARTES GLASSMORPHISM AVEC BORDURE DORÉE
+   CARTES GLASSMORPHISM & SYSTÈME DE QUÊTES/STATS
    ========================================== */
-.luxury-card {
-    background: rgba(20, 12, 35, 0.75);
+.luxury-card, .catalog-card, .quest-card {
+    background: var(--bg-surface);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 18px;
-    border: 1px solid rgba(212, 175, 55, 0.25);
+    border: 1px solid var(--border-color);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6),
                 inset 0 0 20px rgba(138, 43, 226, 0.12);
     padding: 35px;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.catalog-card:hover, .quest-card:hover {
+    border-color: var(--accent);
+}
+
+/* Grille des statistiques (player-stats.js) */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    font-family: var(--font-mono);
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 /* ==========================================
@@ -110,7 +144,7 @@ body {
 #question-text {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--text-main);
     margin-bottom: 25px;
     line-height: 1.6;
 }
@@ -124,7 +158,7 @@ body {
 .option-btn {
     padding: 16px 22px;
     background: rgba(255, 255, 255, 0.03);
-    color: #e2e8f0;
+    color: var(--text-main);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     font-size: 0.98rem;
@@ -138,6 +172,95 @@ body {
     border-color: #7c3aed;
     box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
     transform: translateX(5px);
+}
+
+/* ==========================================
+   SYSTÈMES DE QUÊTES (quest-system.js)
+   ========================================== */
+.quest-card {
+    padding: 1.2rem;
+    margin-bottom: 0.8rem;
+}
+
+.quest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.quest-icon {
+    font-size: 1.2rem;
+}
+
+.quest-type {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    background: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+}
+
+.quest-name {
+    display: block;
+    color: var(--text-main);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.quest-desc {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
+}
+
+.quest-steps {
+    margin-bottom: 0.6rem;
+}
+
+.quest-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
+}
+
+.step-info {
+    flex: 1;
+}
+
+.step-text {
+    color: var(--text-main);
+    text-transform: capitalize;
+}
+
+.step-bar {
+    background: var(--bg-card);
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 2px;
+    overflow: hidden;
+}
+
+.step-bar span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.3s ease;
+}
+
+.quest-reward {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.4rem;
+}
+
+.quest-reward small {
+    color: var(--accent-light);
+    font-family: var(--font-mono);
 }
 
 /* ==========================================
@@ -185,7 +308,7 @@ body {
     flex-grow: 1;
     font-weight: 600;
     letter-spacing: 0.5px;
-    color: #f8fafc;
+    color: var(--text-main);
 }
 
 .leaderboard-item .score {
