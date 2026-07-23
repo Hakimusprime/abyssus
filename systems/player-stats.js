@@ -1,89 +1,105 @@
 "use strict";
 
 /**
- * Abyssus Player Stats — Statistiques détaillées et historique des parties
- *
- * S'appuie sur le document Firestore utilisateur existant sans le casser.
- * Ajoute des données statistiques sous le champ `stats` du document user.
- * Toutes les stats sont optionnelles et rétrocompatibles.
- *
- * Hookée sur les événements AbyssusEvents pour se mettre à jour automatiquement.
+ * ABYSSUS — Player Stats System
+ * Emplacement : /systems/player-stats.js
+ * 
+ * Gère les statistiques de l'explorateur de manière hybride (LocalStorage / Firestore)
  */
+
 const AbyssusPlayerStats = (() => {
   // Métriques suivies
   const METRICS = {
-    totalQuizAttempted: 0,        // Quiz tentés
-    totalQuizCorrect: 0,          // Quiz réussis
-    totalQuizWrong: 0,            // Quiz ratés
-    totalReflections: 0,          // Réflexions partagées
-    totalFavorites: 0,            // Favoris utilisés
-    longestStreak: 0,             // Plus longue série de bonnes réponses
-    currentStreak: 0,             // Série en cours
-    dailyQuizDone: 0,             // Quiz faits aujourd'hui
-    dailyReflectionDone: 0,       // Réflexions aujourd'hui
-    lastActiveDate: null,         // Dernière date d'activité
-    sessionCount: 0,              // Nombre de sessions
+    totalQuizAttempted: 0,        
+    totalQuizCorrect: 0,          
+    totalQuizWrong: 0,            
+    totalReflections: 0,          
+    totalFavorites: 0,            
+    longestStreak: 0,             
+    currentStreak: 0,             
+    dailyQuizDone: 0,             
+    dailyReflectionDone: 0,       
+    lastActiveDate: null,         
+    sessionCount: 1,              
   };
 
   let cachedStats = {};
   let initialized = false;
   let lastSave = 0;
-  const SAVE_THROTTLE = 2000; // Sauvegarde maximum toutes les 2 secondes
+  const SAVE_THROTTLE = 2000; // Anti-spam de sauvegarde (2 secondes)
 
   /**
-   * Initialise ou récupère les stats depuis le document Firestore
+   * Récupère les stats depuis l'objet utilisateur (userData global ou Firestore)
    */
-  function getStats(userData) {
-    if (!userData) return { ...METRICS };
-    const stats = userData.stats || {};
+  function getStats(userSource) {
+    const data = userSource || (typeof userData !== 'undefined' ? userData : {});
+    const stats = data.stats || {};
     return { ...METRICS, ...stats };
   }
 
   /**
-   * Met à jour localement et persiste dans Firestore (throttled)
+   * Met à jour localement (et dans Firestore si disponible, ou LocalStorage)
    */
   async function updateStats(updates) {
-    if (!window.currentUid || !window.userData) return;
-
     const now = Date.now();
-    cachedStats = { ...cachedStats, ...updates };
+    
+    // Mettre à jour le cache local des stats
+    for (const [key, value] of Object.entries(updates)) {
+      if (typeof value === 'number' && typeof cachedStats[key] === 'number') {
+        cachedStats[key] += value;
+      } else {
+        cachedStats[key] = value;
+      }
+    }
     cachedStats.lastActiveDate = new Date().toISOString();
 
-    // Throttle pour éviter trop d'écritures Firestore
+    // Synchronisation avec le `userData` global du script.js si présent
+    if (typeof userData !== 'undefined') {
+      if (!userData.stats) userData.stats = {};
+      userData.stats = { ...userData.stats, ...cachedStats };
+      
+      // Sauvegarde locale automatique si la fonction existe
+      if (typeof saveUserData === 'function') {
+        saveUserData();
+      }
+    }
+
+    // Throttle pour éviter trop d'écritures
     if (now - lastSave < SAVE_THROTTLE) return;
     lastSave = now;
 
-    try {
-      const db = firebase.firestore();
-      const ref = db.collection('users').doc(window.currentUid);
+    // Persistance Firestore si connecté
+    if (typeof firebase !== 'undefined' && window.currentUid) {
+      try {
+        const db = firebase.firestore();
+        const ref = db.collection('users').doc(window.currentUid);
 
-      // Mise à jour incrémentale via Firestore — ne touche que le champ `stats`
-      const firestoreUpdates = {};
-      for (const [key, value] of Object.entries(updates)) {
-        if (typeof value === 'number') {
-          firestoreUpdates[`stats.${key}`] = firebase.firestore.FieldValue.increment(value);
-        } else {
-          firestoreUpdates[`stats.${key}`] = value;
+        const firestoreUpdates = {};
+        for (const [key, value] of Object.entries(updates)) {
+          if (typeof value === 'number') {
+            firestoreUpdates[`stats.${key}`] = firebase.firestore.FieldValue.increment(value);
+          } else {
+            firestoreUpdates[`stats.${key}`] = value;
+          }
         }
-      }
 
-      // S'assurer que l'objet stats existe
-      await ref.set({ stats: {} }, { merge: true });
-      await ref.update(firestoreUpdates);
-    } catch (e) {
-      console.warn('[AbyssusPlayerStats] Erreur de sauvegarde:', e.message);
+        await ref.set({ stats: {} }, { merge: true });
+        await ref.update(firestoreUpdates);
+      } catch (e) {
+        console.warn('[AbyssusPlayerStats] Erreur de sauvegarde Firestore:', e.message);
+      }
     }
   }
 
   /**
-   * Calcule et retourne des statistiques dérivées
+   * Calcule les statistiques dérivées
    */
   function computeDerivedStats(stats) {
-    const total = stats.totalQuizAttempted || 1;
-    const accuracy = Math.round(((stats.totalQuizCorrect || 0) / total) * 100);
+    const total = stats.totalQuizAttempted || 0;
+    const accuracy = total > 0 ? Math.round(((stats.totalQuizCorrect || 0) / total) * 100) : 0;
 
     return {
-      accuracy,                      // Précision en %
+      accuracy,                      
       reflectionsWritten: stats.totalReflections || 0,
       quizzesDone: stats.totalQuizAttempted || 0,
       quizzesCorrect: stats.totalQuizCorrect || 0,
@@ -95,89 +111,77 @@ const AbyssusPlayerStats = (() => {
   }
 
   /**
-   * Génère un rapport complet pour affichage (profil / tableau de bord)
+   * Génère un rapport complet pour affichage
    */
-  function buildReport(userData) {
-    const stats = getStats(userData);
+  function buildReport(userSource) {
+    const data = userSource || (typeof userData !== 'undefined' ? userData : {});
+    const stats = getStats(data);
     const derived = computeDerivedStats(stats);
-    const domainXP = userData.domainXP || {};
+    const domainXP = data.domainXP || {};
+
+    // Calcul du rang selon l'XP global
+    const xp = data.xp || (typeof userData !== 'undefined' ? userData.xp : 0) || 0;
+    const rank = (() => {
+      const RANKS = [
+        { name: "F", threshold: 0 }, { name: "E", threshold: 100 },
+        { name: "D", threshold: 250 }, { name: "C", threshold: 500 },
+        { name: "B", threshold: 900 }, { name: "A", threshold: 1500 },
+        { name: "S", threshold: 2400 }, { name: "SS", threshold: 3600 },
+        { name: "SSS", threshold: 5200 }, { name: "Abyss", threshold: 7200 }
+      ];
+      let idx = 0;
+      for (let i = 0; i < RANKS.length; i++) { if (xp >= RANKS[i].threshold) idx = i; }
+      return RANKS[idx].name;
+    })();
 
     return {
       ...derived,
       domains: Object.keys(domainXP).length,
-      topDomain: Object.entries(domainXP).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Aucun',
-      xp: userData.xp || 0,
-      rank: userData.xp ? (() => {
-        const RANKS = [
-          { name: "F", threshold: 0 }, { name: "E", threshold: 100 },
-          { name: "D", threshold: 250 }, { name: "C", threshold: 500 },
-          { name: "B", threshold: 900 }, { name: "A", threshold: 1500 },
-          { name: "S", threshold: 2400 }, { name: "SS", threshold: 3600 },
-          { name: "SSS", threshold: 5200 }, { name: "Abyss", threshold: 7200 }
-        ];
-        const xp = userData.xp || 0;
-        let idx = 0;
-        for (let i = 0; i < RANKS.length; i++) { if (xp >= RANKS[i].threshold) idx = i; }
-        return RANKS[idx].name;
-      })() : 'F',
-      progress: userData.xp || 0,
-      totalReflections: Object.keys(userData.reflections || {}).length,
-      totalFavorites: (userData.favorites || []).length,
+      topDomain: Object.entries(domainXP).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Général',
+      xp: xp,
+      rank: rank,
+      totalReflections: data.reflectionData ? Object.keys(data.reflectionData).length : 0,
+      totalFavorites: (data.favorites || []).length,
     };
   }
 
   /**
-   * Enrichit le DOM avec le panneau de statistiques (à insérer où besoin)
+   * Injecte le panneau de statistiques dans l'interface
    */
   function renderStatsPanel(containerId) {
     const container = document.getElementById(containerId);
-    if (!container || !window.userData) return;
+    const currentData = typeof userData !== 'undefined' ? userData : null;
+    if (!container || !currentData) return;
 
-    const report = buildReport(window.userData);
+    const report = buildReport(currentData);
 
     container.innerHTML = `
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span class="stat-value">${report.accuracy}%</span>
-          <span class="stat-label">Précision</span>
+      <div class="stats-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; font-family: var(--font-mono, monospace);">
+        <div class="catalog-card" style="padding: 1rem; text-align: center;">
+          <span class="stat-value" style="font-size: 1.5rem; font-weight:bold; color:var(--text-main);">${report.accuracy}%</span>
+          <span class="stat-label" style="display:block; font-size:0.75rem; color:var(--text-dim);">PRÉCISION</span>
         </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.quizzesDone}</span>
-          <span class="stat-label">Quiz tentés</span>
+        <div class="catalog-card" style="padding: 1rem; text-align: center;">
+          <span class="stat-value" style="font-size: 1.5rem; font-weight:bold; color:var(--text-main);">${report.quizzesDone}</span>
+          <span class="stat-label" style="display:block; font-size:0.75rem; color:var(--text-dim);">QUIZ TENTÉS</span>
         </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.reflectionsWritten}</span>
-          <span class="stat-label">Réflexions</span>
+        <div class="catalog-card" style="padding: 1rem; text-align: center;">
+          <span class="stat-value" style="font-size: 1.5rem; font-weight:bold; color:var(--text-main);">${report.reflectionsWritten}</span>
+          <span class="stat-label" style="display:block; font-size:0.75rem; color:var(--text-dim);">RÉFLEXIONS</span>
         </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.currentStreak}</span>
-          <span class="stat-label">Série actuelle</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">🔥 ${report.longestStreak}</span>
-          <span class="stat-label">Meilleure série</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.domains}</span>
-          <span class="stat-label">Domaines explorés</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.topDomain}</span>
-          <span class="stat-label">Domaine principal</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">${report.sessionCount}</span>
-          <span class="stat-label">Sessions</span>
+        <div class="catalog-card" style="padding: 1rem; text-align: center;">
+          <span class="stat-value" style="font-size: 1.5rem; font-weight:bold; color:var(--text-main);">🔥 ${report.longestStreak}</span>
+          <span class="stat-label" style="display:block; font-size:0.75rem; color:var(--text-dim);">MEILLEURE SÉRIE</span>
         </div>
       </div>
     `;
   }
 
   /**
-   * Hook à appeler après une réponse de quiz
+   * Enregistre le résultat d'un quiz
    */
-  function onQuizAnswered(isCorrect, wasFirstAttempt) {
-    if (!wasFirstAttempt) return; // Ne compte que la première tentative
+  function onQuizAnswered(isCorrect, wasFirstAttempt = true) {
+    if (!wasFirstAttempt) return; 
 
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
@@ -187,28 +191,26 @@ const AbyssusPlayerStats = (() => {
 
     if (isCorrect) {
       updates.totalQuizCorrect = 1;
-      updates.currentStreak = (cachedStats.currentStreak || 0) + 1;
-      updates.longestStreak = Math.max(updates.currentStreak, cachedStats.longestStreak || 0);
+      const current = (cachedStats.currentStreak || 0) + 1;
+      updates.currentStreak = current;
+      updates.longestStreak = Math.max(current, cachedStats.longestStreak || 0);
     } else {
       updates.totalQuizWrong = 1;
-      updates.currentStreak = -(cachedStats.currentStreak || 0) + 1; // Série négative = reset
+      updates.currentStreak = 0; // Reset propre de la série en cas d'erreur
     }
 
-    // Compteur quotidien
     if (lastActive !== today) {
       updates.dailyQuizDone = 1;
-      if (lastActive !== today) {
-        updates.sessionCount = 1;
-      }
+      updates.sessionCount = (cachedStats.sessionCount || 0) + 1;
     } else {
-      updates.dailyQuizDone = 1; // Incremental — Firestore additionne
+      updates.dailyQuizDone = 1;
     }
 
     updateStats(updates);
   }
 
   /**
-   * Hook après une réflexion partagée
+   * Enregistre l'action d'une réflexion validée/sauvegardée
    */
   function onReflectionSaved() {
     const now = new Date();
@@ -226,21 +228,25 @@ const AbyssusPlayerStats = (() => {
   }
 
   /**
-   * Chemise les stats au démarrage avec les données Firestore
+   * Initialisation du système de stats
    */
-  function init(userData) {
+  function init(userSource) {
     if (initialized) return;
-    cachedStats = getStats(userData);
+    cachedStats = getStats(userSource);
     initialized = true;
 
-    // Écouter les événements du système
+    // Connexion aux événements système Abyssus si disponibles
     if (typeof AbyssusEvents !== 'undefined') {
-      AbyssusEvents.on(AbyssusEvents.EVENTS.QUIZ_ANSWER, (data) => {
-        onQuizAnswered(data.correct, data.firstAttempt);
-      });
-      AbyssusEvents.on(AbyssusEvents.EVENTS.REFLECTION_SAVED, () => {
-        onReflectionSaved();
-      });
+      try {
+        AbyssusEvents.on(AbyssusEvents.EVENTS.QUIZ_ANSWER, (data) => {
+          onQuizAnswered(data.correct, data.firstAttempt);
+        });
+        AbyssusEvents.on(AbyssusEvents.EVENTS.REFLECTION_SAVED, () => {
+          onReflectionSaved();
+        });
+      } catch (e) {
+        console.warn('[AbyssusPlayerStats] Événements non liés:', e);
+      }
     }
   }
 
