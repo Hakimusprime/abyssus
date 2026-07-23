@@ -129,6 +129,25 @@ let currentQuestion = null;
 let currentQuestionType = null;
 let appInitialized = false;
 
+// --- GESTION DU CHRONOMÈTRE DE RÉFLEXION (< 10 SECONDES) ---
+let questionLoadedTime = 0;
+
+function markQuestionLoaded() {
+  questionLoadedTime = Date.now();
+}
+
+function validateReflectionSpeed() {
+  const TEN_SECONDS = 10000;
+  const elapsed = Date.now() - questionLoadedTime;
+  if (elapsed < TEN_SECONDS) {
+    // Moins de 10 secondes : pénalité de -50 XP et refus de validation
+    addXP(-50, currentQuestion ? currentQuestion.domain : null);
+    queueNotify("L'Abîme condamne la précipitation (-50 XP). Prends le temps de penser.", 4000);
+    return false; // Bloque la soumission
+  }
+  return true; // Temps respecté, valide
+}
+
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 const DEFAULT_USER_DOC = () => ({
