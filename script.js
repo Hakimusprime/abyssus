@@ -1,334 +1,255 @@
 // ==========================================
-// 1. BASE DE DONNÉES DES QUESTIONS
+// 1. BASES DE DONNÉES DU CATALOGUE PAR DOMAINES
 // ==========================================
-const abyssusQuizData = [
+const CATALOG_DATA = {
+  penseurs: {
+    title: "🧠 PENSEURS",
+    subdomains: ["Tous", "Philosophie", "Psychologie", "Histoire", "Sciences", "Littérature"],
+    items: [
+      { id: "P01", title: "Nietzsche & Le Surhomme", sub: "Philosophie", rating: "4.9", image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400" },
+      { id: "P02", title: "Les Abysses de Freud", sub: "Psychologie", rating: "4.7", image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=400" },
+      { id: "P03", title: "L'Empire Romain", sub: "Histoire", rating: "4.8", image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400" }
+    ]
+  },
+  otaku: {
+    title: "🎌 OTAKU",
+    subdomains: ["Tous", "Manga", "Anime", "Jeux vidéo", "Light Novel", "Webtoon"],
+    items: [
+      { id: "O01", title: "Berserk : L'Éclipse", sub: "Manga", rating: "5.0", image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400" },
+      { id: "O02", title: "Monster & Johan Liebert", sub: "Anime", rating: "4.9", image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400" },
+      { id: "O03", title: "Solo Leveling & Monarques", sub: "Webtoon", rating: "4.8", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400" },
+      { id: "O04", title: "Elden Ring & Lore", sub: "Jeux vidéo", rating: "4.9", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400" }
+    ]
+  },
+  culture: {
+    title: "🌍 CULTURE GÉNÉRALE",
+    subdomains: ["Tous", "Géographie", "Cinéma", "Musique", "Technologies", "Sports"],
+    items: [
+      { id: "C01", title: "Cinéma Dark & Thrillers", sub: "Cinéma", rating: "4.8", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400" },
+      { id: "C02", title: "Intelligence Artificielle", sub: "Technologies", rating: "4.7", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400" }
+    ]
+  }
+};
+
+// Questions d'épreuves exemple
+const quizQuestions = [
   {
-    id: "Q001",
-    question: "Dans Monster de Naoki Urasawa, quel est le nom du programme d'endoctrinement secret où Johan Liebert a grandi ?",
+    question: "Dans Monster de Naoki Urasawa, quel orphelinat expérimental a vu grandir Johan Liebert ?",
     options: ["L'Espace 47", "Le Kindergarten 511", "La Rose Rouge", "La Clinique des Ombres"],
-    correctAnswer: 1,
-    difficulty: "Moyen",
-    explanation: "Le Kindergarten 511 était un orphelinat expérimental visant à créer des soldats idéaux sans émotions."
+    correct: 1,
+    explanation: "Le Kindergarten 511 visait à créer des soldats idéaux dénués d'émotions."
   },
   {
-    id: "Q002",
-    question: "Dans Berserk, quel est le nom du talisman contrôlé par le Béhélit Pourpre qui ouvre la porte de l'Éclipse ?",
-    options: ["L'Œuf du Roi Suprême", "La Clé de l'Abysse", "Le Sceau de la Main de Dieu", "L'Œil du Néant"],
-    correctAnswer: 0,
-    difficulty: "Facile",
-    explanation: "L'Œuf du Roi Suprême réagit au désespoir ultime de son porteur pour invoquer la God Hand."
-  },
-  {
-    id: "Q003",
-    question: "Dans Tokyo Ghoul, quel est le grade d'investigateur de Kotaro Amon au début de la série ?",
-    options: ["Inspecteur Spécial", "Inspecteur de Première Classe", "Inspecteur Adjoint (Rang 2)", "Inspecteur de Rang 3"],
-    correctAnswer: 2,
-    difficulty: "Moyen",
-    explanation: "Amon commence comme Inspecteur Adjoint sous la tutelle de Kureo Mado."
-  },
-  {
-    id: "Q004",
-    question: "Dans Sakamoto Days, quelle est la règle absolue imposée par Aoi à son mari Taro Sakamoto ?",
-    options: ["Ne plus jamais utiliser d'armes", "Ne plus jamais tuer quiconque", "Ne pas quitter la ville", "Ne plus revoir ses collègues"],
-    correctAnswer: 1,
-    difficulty: "Facile",
-    explanation: "Aoi a menacé Sakamoto du divorce s'il venait à tuer à nouveau."
-  },
-  {
-    id: "Q005",
-    question: "Dans Jagaaan, quel compagnon singulier guide Jagasaki dans sa chasse aux Dae-gū ?",
-    options: ["Un corbeau mécanique", "Une chouette nommée Doku-chan", "Un chat noir télépathe", "Un serpent de feu"],
-    correctAnswer: 1,
-    difficulty: "Moyen",
-    explanation: "Doku-chan alimente Jagasaki en fientes magiques pour lui permettre de tirer des projectiles."
+    question: "Dans Berserk, quel est le talisman qui invoque la Main de Dieu lors de l'Éclipse ?",
+    options: ["L'Œuf du Roi Suprême", "La Clé de l'Abysse", "Le Sceau Céleste", "L'Œil du Néant"],
+    correct: 0,
+    explanation: "Le Béhélit pourpre réagit au désespoir ultime de son porteur."
   }
 ];
 
 // ==========================================
-// 2. CONFIGURATION DES RANGS & PROGRESSION
+// 2. GESTION DE LA NAVIGATION & VUES (SPA)
 // ==========================================
-const RANK_THRESHOLDS = [
-  { rank: "F", xpNeededForNext: 5000 },
-  { rank: "E", xpNeededForNext: 10000 },
-  { rank: "D", xpNeededForNext: 100000 },
-  { rank: "C", xpNeededForNext: 1000000 },
-  { rank: "B", xpNeededForNext: 10000000 },
-  { rank: "A", xpNeededForNext: Infinity }
-];
+let currentCategory = 'otaku';
+let currentSubdomain = 'Tous';
 
-const MAX_PV = 100;
-const DAMAGE_PER_ERROR = 25;
-const XP_PER_SUCCESS = 1000;
-const COOLDOWN_DURATION_MS = 1 * 60 * 60 * 1000; // 1 heure
+function switchView(viewId) {
+  document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
+  const targetView = document.getElementById(viewId);
+  if (targetView) targetView.classList.add('active');
 
-// ==========================================
-// 3. ÉTAT DE L'APPLICATION (STORAGE & VARS)
-// ==========================================
-let playerPV = parseInt(localStorage.getItem("abyssus_pv")) || MAX_PV;
-let playerXP = parseInt(localStorage.getItem("abyssus_xp")) || 0;
-let cooldownEndTime = parseInt(localStorage.getItem("abyssus_cooldown_end")) || 0;
-
-let currentIndex = 0;
-let sessionScore = 0;
-let isAnswered = false;
-
-let questionTimer = null;
-let cooldownInterval = null;
-let timeLeft = 5;
-
-// Éléments du DOM
-const pvFillEl = document.getElementById("pv-fill");
-const pvTextEl = document.getElementById("pv-text");
-const xpFillEl = document.getElementById("xp-fill");
-const xpTextEl = document.getElementById("xp-text");
-const rankBadgeEl = document.getElementById("rank-badge");
-
-const questionNumberEl = document.getElementById("question-number");
-const timerBadgeEl = document.getElementById("timer-badge");
-const difficultyBadgeEl = document.getElementById("difficulty-badge");
-const progressFillEl = document.getElementById("progress-fill");
-
-const questionTextEl = document.getElementById("question-text");
-const optionsContainerEl = document.getElementById("options-container");
-const explanationBoxEl = document.getElementById("explanation-box");
-const explanationTextEl = document.getElementById("explanation-text");
-const nextBtn = document.getElementById("next-btn");
-
-const cooldownScreenEl = document.getElementById("cooldown-screen");
-const cooldownTimerEl = document.getElementById("cooldown-timer");
-const quizContainerEl = document.querySelector(".abyssus-quiz-container");
-
-// ==========================================
-// 4. GESTION DES STATS, PV & SHAKE
-// ==========================================
-function updatePlayerStatsUI() {
-  let currentRankIndex = 0;
-  let accumulatedXP = 0;
-
-  for (let i = 0; i < RANK_THRESHOLDS.length; i++) {
-    const stage = RANK_THRESHOLDS[i];
-    if (playerXP >= accumulatedXP + stage.xpNeededForNext) {
-      accumulatedXP += stage.xpNeededForNext;
-      currentRankIndex = i + 1;
-    } else {
-      break;
-    }
-  }
-
-  const currentRankInfo = RANK_THRESHOLDS[Math.min(currentRankIndex, RANK_THRESHOLDS.length - 1)];
-  const currentRankName = currentRankInfo.rank;
-  const xpInCurrentRank = playerXP - accumulatedXP;
-  const xpRequiredForNext = currentRankInfo.xpNeededForNext;
-
-  rankBadgeEl.textContent = currentRankName;
-  if (xpRequiredForNext === Infinity) {
-    xpTextEl.textContent = `${playerXP} XP (Rang Max)`;
-    xpFillEl.style.width = "100%";
-  } else {
-    xpTextEl.textContent = `${xpInCurrentRank} / ${xpRequiredForNext} XP`;
-    const xpPercent = Math.min(100, Math.max(0, (xpInCurrentRank / xpRequiredForNext) * 100));
-    xpFillEl.style.width = `${xpPercent}%`;
-  }
-
-  pvTextEl.textContent = `${playerPV} / ${MAX_PV}`;
-  const pvPercent = Math.min(100, Math.max(0, (playerPV / MAX_PV) * 100));
-  pvFillEl.style.width = `${pvPercent}%`;
-
-  localStorage.setItem("abyssus_pv", playerPV);
-  localStorage.setItem("abyssus_xp", playerXP);
+  // Fermer la sidebar sur mobile
+  closeSidebar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function applyDamage(amount) {
-  playerPV = Math.max(0, playerPV - amount);
-  updatePlayerStatsUI();
+function switchCategory(catKey) {
+  currentCategory = catKey;
+  currentSubdomain = 'Tous';
+  const data = CATALOG_DATA[catKey];
 
-  // Animation de secousse
-  quizContainerEl.classList.add("shake-damage");
-  setTimeout(() => {
-    quizContainerEl.classList.remove("shake-damage");
-  }, 400);
+  if (!data) return;
 
-  if (playerPV <= 0) {
-    triggerCooldown();
-  }
+  document.getElementById('catalog-title').textContent = data.title;
+  renderSubdomainsBar(data.subdomains);
+  renderPosters();
+  switchView('view-catalog');
 }
 
-function addXP(amount) {
-  playerXP += amount;
-  updatePlayerStatsUI();
+function renderSubdomainsBar(subdomains) {
+  const container = document.getElementById('subdomains-bar');
+  container.innerHTML = '';
+
+  subdomains.forEach(sub => {
+    const btn = document.createElement('button');
+    btn.className = `sub-tab ${sub === currentSubdomain ? 'active' : ''}`;
+    btn.textContent = sub;
+    btn.onclick = () => {
+      currentSubdomain = sub;
+      renderSubdomainsBar(subdomains);
+      renderPosters();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function renderPosters() {
+  const container = document.getElementById('posters-grid');
+  container.innerHTML = '';
+
+  const data = CATALOG_DATA[currentCategory];
+  if (!data) return;
+
+  const filteredItems = currentSubdomain === 'Tous' 
+    ? data.items 
+    : data.items.filter(item => item.sub === currentSubdomain);
+
+  filteredItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'poster-card';
+    card.onclick = () => startQuizFromCatalog(item.title);
+
+    card.innerHTML = `
+      <div class="poster-image-wrapper">
+        <img src="${item.image}" alt="${item.title}">
+        <span class="poster-tag">${item.sub}</span>
+        <span class="poster-rating">★ ${item.rating}</span>
+      </div>
+      <div class="poster-info">
+        <h4 class="poster-title">${item.title}</h4>
+        <span class="poster-sub">5 Questions • 1000 XP</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 // ==========================================
-// 5. GESTION DU COOLDOWN (1 HEURE)
+// 3. MENU LATÉRAL (DRAWER)
 // ==========================================
-function triggerCooldown() {
-  clearInterval(questionTimer);
-  cooldownEndTime = Date.now() + COOLDOWN_DURATION_MS;
-  localStorage.setItem("abyssus_cooldown_end", cooldownEndTime);
-  checkCooldownState();
+const menuToggleBtn = document.getElementById('menu-toggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('active');
 }
 
-function checkCooldownState() {
-  const now = Date.now();
-  if (cooldownEndTime > now) {
-    cooldownScreenEl.classList.remove("hidden");
-    startCooldownClock();
-  } else {
-    if (cooldownEndTime !== 0) {
-      playerPV = MAX_PV;
-      cooldownEndTime = 0;
-      localStorage.removeItem("abyssus_cooldown_end");
-      updatePlayerStatsUI();
-    }
-    cooldownScreenEl.classList.add("hidden");
-    clearInterval(cooldownInterval);
-  }
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('active');
 }
 
-function startCooldownClock() {
-  clearInterval(cooldownInterval);
-  cooldownInterval = setInterval(() => {
-    const remainingMs = cooldownEndTime - Date.now();
+menuToggleBtn.addEventListener('click', openSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
 
-    if (remainingMs <= 0) {
-      clearInterval(cooldownInterval);
-      checkCooldownState();
-      return;
-    }
+// ==========================================
+// 4. MOTEUR D'ÉPREUVE (QUIZ INTEGRATION)
+// ==========================================
+let currentQuizIndex = 0;
+let isQuestionAnswered = false;
 
-    const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-    const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-
-    cooldownTimerEl.textContent = 
-      `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }, 1000);
+function startQuizFromCatalog(title) {
+  document.getElementById('quiz-category-tag').textContent = title.toUpperCase();
+  currentQuizIndex = 0;
+  switchView('view-quiz');
+  loadQuizQuestion();
 }
 
-// ==========================================
-// 6. MOTEUR DU QUIZ
-// ==========================================
-function loadQuestion() {
-  checkCooldownState();
-  if (cooldownEndTime > Date.now()) return;
+function loadQuizQuestion() {
+  isQuestionAnswered = false;
+  const q = quizQuestions[currentQuizIndex];
+  
+  document.getElementById('question-number').textContent = `QUESTION ${currentQuizIndex + 1} / ${quizQuestions.length}`;
+  document.getElementById('question-text').textContent = q.question;
+  document.getElementById('explanation-box').classList.add('hidden');
 
-  isAnswered = false;
-  nextBtn.disabled = true;
-  explanationBoxEl.classList.add("hidden");
+  const optionsContainer = document.getElementById('options-container');
+  optionsContainer.innerHTML = '';
 
-  const currentData = abyssusQuizData[currentIndex];
-
-  questionNumberEl.textContent = `QUESTION ${currentIndex + 1} / ${abyssusQuizData.length}`;
-  difficultyBadgeEl.textContent = currentData.difficulty;
-  progressFillEl.style.width = `${((currentIndex + 1) / abyssusQuizData.length) * 100}%`;
-
-  questionTextEl.textContent = currentData.question;
-  optionsContainerEl.innerHTML = "";
-
-  currentData.options.forEach((option, index) => {
-    const button = document.createElement("button");
-    button.classList.add("option-btn");
-    button.textContent = `${String.fromCharCode(65 + index)}) ${option}`;
-    button.onclick = () => selectOption(index);
-    optionsContainerEl.appendChild(button);
+  q.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = `${String.fromCharCode(65 + idx)}) ${opt}`;
+    btn.onclick = () => handleSelectOption(idx);
+    optionsContainer.appendChild(btn);
   });
 
-  startQuestionTimer();
+  document.getElementById('next-btn').disabled = true;
 }
 
-function startQuestionTimer() {
-  clearInterval(questionTimer);
-  timeLeft = 5;
+function handleSelectOption(selectedIndex) {
+  if (isQuestionAnswered) return;
+  isQuestionAnswered = true;
 
-  timerBadgeEl.textContent = `⏱️ ${timeLeft}s`;
-  timerBadgeEl.classList.remove("danger");
-
-  questionTimer = setInterval(() => {
-    timeLeft--;
-    timerBadgeEl.textContent = `⏱️ ${timeLeft}s`;
-
-    if (timeLeft <= 2) {
-      timerBadgeEl.classList.add("danger");
-    }
-
-    if (timeLeft <= 0) {
-      clearInterval(questionTimer);
-      handleTimeout();
-    }
-  }, 1000);
-}
-
-function selectOption(selectedIndex) {
-  if (isAnswered) return;
-  isAnswered = true;
-  clearInterval(questionTimer);
-
-  const currentData = abyssusQuizData[currentIndex];
-  const buttons = optionsContainerEl.querySelectorAll(".option-btn");
+  const q = quizQuestions[currentQuizIndex];
+  const buttons = document.querySelectorAll('#options-container .option-btn');
 
   buttons.forEach((btn, idx) => {
-    btn.disabled = true;
-    if (idx === currentData.correctAnswer) {
-      btn.classList.add("correct");
-    } else if (idx === selectedIndex) {
-      btn.classList.add("wrong");
-    }
+    if (idx === q.correct) btn.classList.add('correct');
+    else if (idx === selectedIndex) btn.classList.add('wrong');
   });
 
-  if (selectedIndex === currentData.correctAnswer) {
-    sessionScore++;
-    addXP(XP_PER_SUCCESS);
-    explanationTextEl.textContent = `✅ Victoire ! +${XP_PER_SUCCESS} XP. ${currentData.explanation}`;
+  const expBox = document.getElementById('explanation-box');
+  document.getElementById('explanation-text').textContent = q.explanation;
+  expBox.classList.remove('hidden');
+
+  document.getElementById('next-btn').disabled = false;
+}
+
+document.getElementById('next-btn').onclick = () => {
+  currentQuizIndex++;
+  if (currentQuizIndex < quizQuestions.length) {
+    loadQuizQuestion();
   } else {
-    applyDamage(DAMAGE_PER_ERROR);
-    explanationTextEl.textContent = `❌ Échec ! (-${DAMAGE_PER_ERROR} PV). ${currentData.explanation}`;
+    showToast('🎉 Épreuve terminée avec succès !');
+    switchView('view-home');
   }
+};
 
-  explanationBoxEl.classList.remove("hidden");
-  if (playerPV > 0) nextBtn.disabled = false;
-}
-
-function handleTimeout() {
-  if (isAnswered) return;
-  isAnswered = true;
-
-  const currentData = abyssusQuizData[currentIndex];
-  const buttons = optionsContainerEl.querySelectorAll(".option-btn");
-
-  buttons.forEach((btn, idx) => {
-    btn.disabled = true;
-    if (idx === currentData.correctAnswer) {
-      btn.classList.add("correct");
-    }
-  });
-
-  applyDamage(DAMAGE_PER_ERROR);
-
-  explanationTextEl.textContent = `⌛ Temps écoulé (-${DAMAGE_PER_ERROR} PV) ! ${currentData.explanation}`;
-  explanationBoxEl.classList.remove("hidden");
-  if (playerPV > 0) nextBtn.disabled = false;
-}
-
-nextBtn.addEventListener("click", () => {
-  currentIndex++;
-  if (currentIndex < abyssusQuizData.length) {
-    loadQuestion();
-  } else {
-    clearInterval(questionTimer);
-    showFinalResults();
+function confirmExitQuiz() {
+  if (confirm("Voulez-vous vraiment quitter l'épreuve ?")) {
+    switchView('view-home');
   }
-});
-
-function showFinalResults() {
-  quizContainerEl.innerHTML = `
-    <div style="text-align: center; padding: 20px;">
-      <h2 style="font-family: var(--font-heading); color: var(--xp-gold); font-size: 2rem; margin-bottom: 15px;">⚔️ ÉPREUVE TERMINÉE</h2>
-      <p style="font-size: 1.3rem; margin: 20px 0;">Questions réussies : <strong>${sessionScore} / ${abyssusQuizData.length}</strong></p>
-      <button onclick="location.reload()" class="btn-primary">Lancer une nouvelle épreuve</button>
-    </div>
-  `;
 }
 
-// Initialisation au chargement de la page
-updatePlayerStatsUI();
-loadQuestion();
+// ==========================================
+// 5. PROFIL & MODAL
+// ==========================================
+function openEditModal() {
+  document.getElementById('edit-modal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('active');
+}
+
+function saveProfileChanges() {
+  const newUsername = document.getElementById('edit-input-username').value;
+  const newSeed = document.getElementById('edit-input-avatar').value;
+  const newBio = document.getElementById('edit-input-bio').value;
+
+  const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(newSeed)}`;
+
+  document.getElementById('home-username').textContent = newUsername;
+  document.getElementById('menu-user-name').textContent = newUsername;
+  document.getElementById('profile-page-name').textContent = newUsername;
+
+  document.getElementById('header-avatar').src = avatarUrl;
+  document.getElementById('menu-user-avatar').src = avatarUrl;
+  document.getElementById('home-avatar').src = avatarUrl;
+  document.getElementById('profile-page-avatar').src = avatarUrl;
+
+  document.getElementById('profile-page-bio').textContent = newBio;
+
+  closeEditModal();
+  showToast('Profil mis à jour !');
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
