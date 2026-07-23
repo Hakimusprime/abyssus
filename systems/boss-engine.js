@@ -1,23 +1,40 @@
 "use strict";
 
 /**
- * Abyssus Boss Engine — Moteur de combat contre les Boss
- *
+ * ABYSSUS — Boss Engine
+ * Emplacement : /systems/boss-engine.js
+ * 
+ * Adapté pour l'intégration hybride (Firestore / LocalStorage)
  * Gère le déroulement des combats : phases, questions, HP, récompenses.
- * S'intègre avec Firestore, AbyssusEvents, et AbyssusAntiCheat.
- * Utilise ABYSSUS_BOSSES (data/bosses.js) et les questions globales.
  */
+
+// Sécurité : Déclaration par défaut si data/bosses.js n'est pas encore intégré
+const ABYSSUS_BOSSES = typeof window.ABYSSUS_BOSSES !== 'undefined' ? window.ABYSSUS_BOSSES : [
+  {
+    id: 'boss_monolith',
+    name: "Le Monolithe d'Ombre",
+    spawnConditions: { minRank: 'F', probability: 1.0 },
+    phases: [{ name: "Phase 1", hp: 100, questionsCount: 3, domains: [] }],
+    dialogues: { 
+      intro: "La structure vibre d'une énergie sombre...", 
+      victory: "Le monolithe se fissure et s'effondre.", 
+      defeat: "Votre volonté a été consumée." 
+    },
+    rewards: { xp: 150, title: 'Dompteur du Néant', relicChance: 0.1 }
+  }
+];
+
 const AbyssusBossEngine = (() => {
   // ── État du combat ──
   let state = {
-    boss: null,             // Le boss actif (objet complet)
-    phaseIndex: 0,          // Index de la phase en cours
-    phaseHP: 0,             // HP restants de la phase
-    questions: [],          // Questions pour la phase en cours [{q, type, domain}]
-    questionIndex: 0,       // Index dans le tableau questions
-    answered: [],           // [{questionId, correct, time}]
-    startedAt: null,        // Timestamp début du combat
-    phaseQuestionCount: 0,  // Questions posées dans cette phase
+    boss: null,             
+    phaseIndex: 0,          
+    phaseHP: 0,             
+    questions: [],          
+    questionIndex: 0,       
+    answered: [],           
+    startedAt: null,        
+    phaseQuestionCount: 0,  
   };
 
   // ── Configuration ──
@@ -38,7 +55,6 @@ const AbyssusBossEngine = (() => {
       if (userRankIdx < minIdx || userRankIdx > maxIdx) return false;
       if (cond.minHP && userHP < cond.minHP) return false;
       if (cond.requireEvent) {
-        // Vérifie si l'événement requis est actif
         if (typeof AbyssusEvents !== 'undefined' && window.AbyssusEventEngine) {
           const events = AbyssusEventEngine.getActiveEvents();
           if (!events.some(e => e.id === cond.requireEvent)) return false;
@@ -57,25 +73,24 @@ const AbyssusBossEngine = (() => {
     const pool = [];
     const domains = phase.domains || [];
 
-    // Questions de quiz
-    if (typeof QUIZ_QUESTIONS !== 'undefined') {
-      QUIZ_QUESTIONS.forEach(q => {
+    // Questions de quiz (Adaptation à la variable quizQuestions du script)
+    if (typeof quizQuestions !== 'undefined') {
+      quizQuestions.forEach(q => {
         if (domains.length === 0 || domains.includes(q.domain)) {
           pool.push({ q, type: 'quiz' });
         }
       });
     }
 
-    // Questions de réflexion
-    if (typeof REFLECTION_QUESTIONS !== 'undefined') {
-      REFLECTION_QUESTIONS.forEach(rq => {
+    // Questions de réflexion (Adaptation à la variable reflectionQuestions du script)
+    if (typeof reflectionQuestions !== 'undefined') {
+      reflectionQuestions.forEach(rq => {
         if (domains.length === 0 || domains.includes(rq.category)) {
           pool.push({ q: rq, type: 'reflexion' });
         }
       });
     }
 
-    // Mélanger et prendre le nombre demandé
     const shuffled = pool.sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count || 3);
   }
@@ -93,21 +108,20 @@ const AbyssusBossEngine = (() => {
     state.answered = [];
     state.startedAt = Date.now();
 
-    // Charger la phase 0
     const phase = boss.phases[0];
     state.phaseHP = phase.hp;
     state.phaseQuestionCount = phase.questionsCount;
     state.questions = pickQuestionsForPhase(phase, phase.questionsCount);
 
-    // Anti-cheat : enregistrer l'ouverture
     if (typeof AbyssusAntiCheat !== 'undefined') {
       AbyssusAntiCheat.onQuestionOpened('boss');
     }
 
-    // Événement système
     if (typeof AbyssusEvents !== 'undefined') {
       AbyssusEvents.emit(AbyssusEvents.EVENTS.BOSS_START, { boss: boss });
     }
+
+    if (typeof notify === 'function') notify(`COMBAT ENGAGÉ : ${boss.name}`);
 
     return buildState();
   }
@@ -118,25 +132,21 @@ const AbyssusBossEngine = (() => {
       return { error: 'Aucune question active.' };
     }
 
-    // Anti-cheat
     if (typeof AbyssusAntiCheat !== 'undefined') {
       const check = AbyssusAntiCheat.validateQuizAnswer();
-      if (!check.allowed) {
-        return { error: check.reason };
-      }
+      if (!check.allowed) return { error: check.reason };
     }
 
     const current = state.questions[state.questionIndex];
     let correct = false;
 
     if (current.type === 'quiz') {
-      correct = choiceIndex === current.q.correct;
+      // Ajustement : vérifier 'correctIndex' au lieu de 'correct' selon votre fichier quiz_questions.js
+      correct = choiceIndex === (current.q.correctIndex !== undefined ? current.q.correctIndex : current.q.correct);
     } else if (current.type === 'reflexion') {
-      // Les réflexions sont toujours considérées correctes si soumises
       correct = true;
     }
 
-    // Enregistrer la réponse
     state.answered.push({
       questionId: current.q.id,
       type: current.type,
@@ -145,7 +155,6 @@ const AbyssusBossEngine = (() => {
       time: Date.now() - state.startedAt,
     });
 
-    // Événement quiz answer
     if (typeof AbyssusEvents !== 'undefined') {
       AbyssusEvents.emit(AbyssusEvents.EVENTS.QUIZ_ANSWER, {
         correct,
@@ -155,17 +164,17 @@ const AbyssusBossEngine = (() => {
       });
     }
 
-    // Anti-cheat: enregistrer le résultat
     if (typeof AbyssusAntiCheat !== 'undefined') {
       if (correct) AbyssusAntiCheat.onCorrectAnswer();
       else AbyssusAntiCheat.onWrongAnswer();
     }
 
-    // Appliquer les effets
+    // Dommages
     if (!correct) {
       state.phaseHP = Math.max(0, state.phaseHP - 30);
-      // Perdre des HP via Firestore
-      if (window.currentUid) {
+      
+      // Sécurité Firestore
+      if (typeof firebase !== 'undefined' && window.currentUid) {
         try {
           const fb = firebase.firestore();
           fb.collection('users').doc(window.currentUid).update({
@@ -175,27 +184,22 @@ const AbyssusBossEngine = (() => {
       }
     }
 
-    // Avancer
     state.questionIndex++;
 
-    // Vérifier si la phase est terminée
     if (state.questionIndex >= state.questions.length || state.phaseHP <= 0) {
       if (state.phaseHP <= 0) {
-        // Défaite — phase perdue
         return await endBoss(false);
       }
-      // Phase terminée — passer à la suivante si elle existe
       if (state.phaseIndex < state.boss.phases.length - 1) {
         return advancePhase();
       } else {
-        // Victoire de toutes les phases
         return await endBoss(true);
       }
     }
 
     return {
       ...buildState(),
-      feedback: { correct, message: correct ? 'Bonne réponse !' : 'Mauvaise réponse...' }
+      feedback: { correct, message: correct ? 'ANALYSE CORRECTE' : 'ÉCHEC DE L\'ANALYSE' }
     };
   }
 
@@ -227,29 +231,31 @@ const AbyssusBossEngine = (() => {
         relicUnlocked: false,
       };
 
-      // Appliquer les récompenses Firestore
-      if (window.currentUid) {
+      // 1. Essai de mise à jour Firestore
+      if (typeof firebase !== 'undefined' && window.currentUid) {
         try {
           const fb = firebase.firestore();
-          const update = {
-            xp: firebase.firestore.FieldValue.increment(rewards.xp),
-          };
-
-          // Titre si applicable
-          if (rewards.title) {
-            update[`bossTitles.${boss.id}`] = rewards.title;
-          }
-
-          // Relique chance
+          const update = { xp: firebase.firestore.FieldValue.increment(rewards.xp) };
+          if (rewards.title) update[`bossTitles.${boss.id}`] = rewards.title;
           if (Math.random() < rewards.relicChance) {
             const relicIndex = Math.floor(Math.random() * 9) + 1;
             update.relics = firebase.firestore.FieldValue.arrayUnion(relicIndex);
             rewards.relicUnlocked = true;
           }
-
           await fb.collection('users').doc(window.currentUid).update(update);
         } catch (e) {
-          console.warn('[BossEngine] Erreur récompenses:', e);
+          console.warn('[BossEngine] Erreur Firestore:', e);
+        }
+      } 
+      // 2. Fallback LocalStorage (Architecture script.js actuelle)
+      else if (typeof userData !== 'undefined') {
+        if (typeof gainXP === 'function') gainXP(rewards.xp);
+        if (rewards.title) {
+          if (!userData.defeatedBosses.includes(boss.id)) {
+            userData.defeatedBosses.push(boss.id);
+            if (typeof saveUserData === 'function') saveUserData();
+            if (typeof renderBossTitles === 'function') renderBossTitles();
+          }
         }
       }
     }
@@ -267,28 +273,20 @@ const AbyssusBossEngine = (() => {
       }
     };
 
-    // Événement système
     if (typeof AbyssusEvents !== 'undefined') {
-      AbyssusEvents.emit(AbyssusEvents.EVENTS.BOSS_END, {
-        boss: boss,
-        victory,
-        rewards
-      });
+      AbyssusEvents.emit(AbyssusEvents.EVENTS.BOSS_END, { boss: boss, victory, rewards });
     }
 
-    // Nettoyer l'état
-    state = {
-      boss: null, phaseIndex: 0, phaseHP: 0,
-      questions: [], questionIndex: 0, answered: [],
-      startedAt: null, phaseQuestionCount: 0,
-    };
+    if (typeof notify === 'function') {
+      notify(victory ? `VICTOIRE : +${rewards.xp} XP` : `DÉFAITE FACE À ${boss.name}`);
+    }
 
+    abortBoss(); // Nettoyer l'état
     return result;
   }
 
   // ── Abandonner le combat ──
   function abortBoss() {
-    if (!state.boss) return;
     state = {
       boss: null, phaseIndex: 0, phaseHP: 0,
       questions: [], questionIndex: 0, answered: [],
@@ -296,10 +294,9 @@ const AbyssusBossEngine = (() => {
     };
   }
 
-  // ── Construire l'état renvoyé au UI ──
+  // ── Construire l'état ──
   function buildState() {
     if (!state.boss) return null;
-
     const phase = state.boss.phases[state.phaseIndex];
     const currentQ = state.questions[state.questionIndex] || null;
 
@@ -326,17 +323,21 @@ const AbyssusBossEngine = (() => {
         total: state.questions.length,
         text: currentQ.q.question,
         type: currentQ.type,
-        choices: currentQ.type === 'quiz' ? currentQ.q.choices : null,
+        choices: currentQ.type === 'quiz' ? (currentQ.q.options || currentQ.q.choices) : null,
         domain: currentQ.q.domain || currentQ.q.category,
-        xp: currentQ.q.xp || 10,
+        xp: currentQ.q.xpReward || currentQ.q.xp || 10,
       } : null,
       progress: state.answered.length,
     };
   }
 
-  // ── Récupérer le boss actif ──
-  function getCurrentBoss() {
-    return state.boss;
+  // ── Connecteur UI pour script.js ──
+  function openBossModal() {
+    const bossToSpawn = checkSpawn("F", 100) || ABYSSUS_BOSSES[0];
+    startBoss(bossToSpawn);
+    
+    // Raccourci pour tester la victoire instantanée si vous le souhaitez en dev
+    // answerQuestion(0).then(() => answerQuestion(1)).then(() => answerQuestion(2)); 
   }
 
   // ── API publique ──
@@ -345,7 +346,8 @@ const AbyssusBossEngine = (() => {
     startBoss,
     answerQuestion,
     abortBoss,
-    getCurrentBoss,
+    getCurrentBoss: () => state.boss,
     getState: buildState,
+    openBossModal // Ajout pour compatibilité avec le bouton UI
   };
 })();
