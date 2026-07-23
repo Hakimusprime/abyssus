@@ -3,49 +3,37 @@
  * Handles Firebase authentication and real-time database operations
  */
 
-import { 
-  auth, 
-  database, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  ref, 
-  set, 
-  get, 
-  update, 
-  remove, 
-  onValue, 
-  push 
-} from './firebase-config.js';
-
 class CloudDataManager {
   constructor() {
     this.currentUser = null;
     this.playerProfile = null;
     this.listeners = new Map();
+    this.auth = firebase.auth();
+    this.db = firebase.database();
     this.initAuthListener();
   }
 
   // Authentication
   initAuthListener() {
-    onAuthStateChanged(auth, async (user) => {
+    this.auth.onAuthStateChanged(async (user) => {
       if (user) {
         this.currentUser = user;
         console.log('✅ Utilisateur connecté:', user.email);
         await this.loadPlayerProfile(user.uid);
         this.setupRealtimeListeners(user.uid);
+        this.updateAuthUI();
       } else {
         this.currentUser = null;
         this.playerProfile = null;
-        console.log('❌ Utilisateur déconnecté');
+        console.log('🔌 Utilisateur déconnecté');
+        this.updateAuthUI();
       }
     });
   }
 
   async register(email, password, username) {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
 
       // Create player profile
@@ -65,7 +53,7 @@ class CloudDataManager {
         lastActive: new Date().toISOString()
       };
 
-      await set(ref(database, `players/${user.uid}`), playerProfile);
+      await this.db.ref(`players/${user.uid}`).set(playerProfile);
       console.log('✅ Profil créé:', username);
       return { success: true, user };
     } catch (error) {
@@ -76,7 +64,7 @@ class CloudDataManager {
 
   async login(email, password) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
       console.log('✅ Connexion réussie:', email);
       return { success: true, user: userCredential.user };
     } catch (error) {
@@ -87,7 +75,7 @@ class CloudDataManager {
 
   async logout() {
     try {
-      await signOut(auth);
+      await this.auth.signOut();
       console.log('✅ Déconnexion réussie');
       return { success: true };
     } catch (error) {
@@ -99,7 +87,7 @@ class CloudDataManager {
   // Player Profile
   async loadPlayerProfile(uid) {
     try {
-      const snapshot = await get(ref(database, `players/${uid}`));
+      const snapshot = await this.db.ref(`players/${uid}`).once('value');
       if (snapshot.exists()) {
         this.playerProfile = snapshot.val();
         console.log('✅ Profil chargé');
@@ -112,7 +100,7 @@ class CloudDataManager {
 
   async updatePlayerProfile(uid, updates) {
     try {
-      await update(ref(database, `players/${uid}`), {
+      await this.db.ref(`players/${uid}`).update({
         ...updates,
         lastActive: new Date().toISOString()
       });
@@ -127,8 +115,8 @@ class CloudDataManager {
 
   async addXPToPlayer(uid, amount, domain) {
     try {
-      const playerRef = ref(database, `players/${uid}`);
-      const snapshot = await get(playerRef);
+      const playerRef = this.db.ref(`players/${uid}`);
+      const snapshot = await playerRef.once('value');
       const player = snapshot.val();
 
       const newXP = (player.xp || 0) + amount;
@@ -137,7 +125,7 @@ class CloudDataManager {
         domainXP[domain] = (domainXP[domain] || 0) + amount;
       }
 
-      await update(playerRef, {
+      await playerRef.update({
         xp: newXP,
         domainXP: domainXP
       });
@@ -153,10 +141,10 @@ class CloudDataManager {
   // Community Posts
   async createCommunityPost(uid, username, postData) {
     try {
-      const postsRef = ref(database, 'community/posts');
-      const newPostRef = push(postsRef);
+      const postsRef = this.db.ref('community/posts');
+      const newPostRef = postsRef.push();
 
-      await set(newPostRef, {
+      await newPostRef.set({
         uid: uid,
         username: username,
         title: postData.title,
@@ -178,7 +166,7 @@ class CloudDataManager {
 
   async getCommunityPosts(domain = null) {
     try {
-      const snapshot = await get(ref(database, 'community/posts'));
+      const snapshot = await this.db.ref('community/posts').once('value');
       if (snapshot.exists()) {
         const posts = Object.entries(snapshot.val()).map(([id, data]) => ({
           id,
@@ -198,11 +186,11 @@ class CloudDataManager {
 
   async likePost(postId) {
     try {
-      const postRef = ref(database, `community/posts/${postId}`);
-      const snapshot = await get(postRef);
+      const postRef = this.db.ref(`community/posts/${postId}`);
+      const snapshot = await postRef.once('value');
       const post = snapshot.val();
       
-      await update(postRef, {
+      await postRef.update({
         likes: (post.likes || 0) + 1
       });
 
@@ -217,18 +205,15 @@ class CloudDataManager {
   // Real-time Listeners
   setupRealtimeListeners(uid) {
     // Listen to player profile updates
-    const playerRef = ref(database, `players/${uid}`);
-    const playerListener = onValue(playerRef, (snapshot) => {
+    this.db.ref(`players/${uid}`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         this.playerProfile = snapshot.val();
         this.notifyListeners('player:updated', this.playerProfile);
       }
     });
-    this.listeners.set('player', playerListener);
 
     // Listen to community posts
-    const postsRef = ref(database, 'community/posts');
-    const postsListener = onValue(postsRef, (snapshot) => {
+    this.db.ref('community/posts').on('value', (snapshot) => {
       if (snapshot.exists()) {
         const posts = Object.entries(snapshot.val()).map(([id, data]) => ({
           id,
@@ -237,13 +222,12 @@ class CloudDataManager {
         this.notifyListeners('posts:updated', posts);
       }
     });
-    this.listeners.set('posts', postsListener);
   }
 
   // Global Rankings
   async getGlobalRankings(limit = 50) {
     try {
-      const snapshot = await get(ref(database, 'players'));
+      const snapshot = await this.db.ref('players').once('value');
       if (snapshot.exists()) {
         const players = Object.entries(snapshot.val()).map(([uid, data]) => ({
           uid,
@@ -270,8 +254,8 @@ class CloudDataManager {
   // Inventory Management
   async addRelic(uid, relic) {
     try {
-      const playerRef = ref(database, `players/${uid}`);
-      const snapshot = await get(playerRef);
+      const playerRef = this.db.ref(`players/${uid}`);
+      const snapshot = await playerRef.once('value');
       const player = snapshot.val();
       const inventory = player.inventory || [];
 
@@ -281,7 +265,7 @@ class CloudDataManager {
         obtainedAt: new Date().toISOString()
       });
 
-      await update(playerRef, { inventory });
+      await playerRef.update({ inventory });
       console.log('✅ Relique obtenue');
       return { success: true };
     } catch (error) {
@@ -289,8 +273,16 @@ class CloudDataManager {
       return { success: false, error: error.message };
     }
   }
+
+  updateAuthUI() {
+    if (this.currentUser && window.authUI) {
+      document.getElementById('authBtn').textContent = 'Déconnexion';
+      document.getElementById('createPostBtn')?.style.display = 'block';
+    } else {
+      document.getElementById('authBtn').textContent = 'Se Connecter';
+      document.getElementById('createPostBtn')?.style.display = 'none';
+    }
+  }
 }
 
 const cloudDataManager = new CloudDataManager();
-
-export default cloudDataManager;

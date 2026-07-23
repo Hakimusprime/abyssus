@@ -3,9 +3,13 @@
  * Cloud setup for authentication and real-time database
  */
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-import { getDatabase, ref, set, get, update, remove, onValue, push } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
+// Use global Firebase if available, or load from CDN
+if (typeof firebase === 'undefined') {
+  console.error('Firebase not loaded. Add this to index.html head:')
+  console.error('<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>')
+  console.error('<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>')
+  console.error('<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>')
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7OxNqHBiVsCNxdhatWRY1WUHYPaO1AmM",
@@ -17,9 +21,8 @@ const firebaseConfig = {
   databaseURL: "https://abyssus-1eb8b-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const database = getDatabase(app);
-
-export { auth, database, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ref, set, get, update, remove, onValue, push };
+// Initialize Firebase with global firebase
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+  console.log('✅ Firebase initialized');
+}

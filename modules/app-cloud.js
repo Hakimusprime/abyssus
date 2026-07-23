@@ -32,34 +32,32 @@ class AbyssusApp {
 
   waitForAuth() {
     return new Promise((resolve) => {
-      const checkAuth = setInterval(() => {
-        if (cloudDataManager.currentUser !== null || cloudDataManager.currentUser !== undefined) {
-          clearInterval(checkAuth);
-          resolve();
-        }
-      }, 100);
-      setTimeout(() => {
-        clearInterval(checkAuth);
+      if (cloudDataManager) {
         resolve();
-      }, 3000);
+      } else {
+        setTimeout(() => resolve(), 100);
+      }
     });
   }
 
   setupAuthButton() {
     const authBtn = document.getElementById('authBtn');
+    const createPostBtn = document.getElementById('createPostBtn');
+    
     if (!authBtn) return;
 
     if (cloudDataManager.currentUser) {
       authBtn.textContent = 'Déconnexion';
-      authBtn.addEventListener('click', async () => {
+      authBtn.onclick = async () => {
         await cloudDataManager.logout();
         location.reload();
-      });
+      };
+      createPostBtn.style.display = 'block';
+      createPostBtn.onclick = () => this.createCommunityPost();
     } else {
       authBtn.textContent = 'Se Connecter';
-      authBtn.addEventListener('click', () => {
-        authUI.showAuthModal();
-      });
+      authBtn.onclick = () => authUI.showAuthModal();
+      createPostBtn.style.display = 'none';
     }
   }
 
