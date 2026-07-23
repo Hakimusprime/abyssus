@@ -4,15 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ABYSSUS — Archive & Progression</title>
-  <!-- Lien CSS direct à la racine -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Toast Notification -->
   <div id="toastNotification" class="toast"></div>
 
-  <!-- HEADER STYLE EDITORIAL / DOPPLE PRESS -->
+  <!-- HEADER -->
   <header class="site-header">
     <div class="header-main">
       <div class="brand">
@@ -25,7 +23,6 @@
       </div>
     </div>
     
-    <!-- BARRE DE NAVIGATION & CATALOGUE -->
     <nav class="catalog-nav">
       <button class="nav-btn active" data-target="sec-profile">
         <span class="nav-idx">01</span> ARCHIVE PROFIL
@@ -42,10 +39,10 @@
     </nav>
   </header>
 
-  <!-- CONTENU PRINCIPAL -->
+  <!-- CONTENU -->
   <main class="main-container">
 
-    <!-- SECTION 01 : PROFIL -->
+    <!-- PROFIL -->
     <section id="sec-profile" class="app-section active">
       <div class="section-header">
         <span class="section-tag">[ DOSSIER EXPLORATEUR ]</span>
@@ -101,17 +98,17 @@
       </div>
     </section>
 
-    <!-- SECTION 02 : RÉFLEXIONS -->
+    <!-- RÉFLEXIONS -->
     <section id="sec-reflections" class="app-section">
       <div class="section-header">
         <span class="section-tag">[ INDEX DES PENSÉES ]</span>
         <h2>SANCTUAIRE DES RÉFLEXIONS</h2>
-        <p class="section-desc">Consignez vos analyses. L'XP attribuée nécessite l'obtention minimale d'un cœur ❤️ d'un tiers.</p>
+        <p class="section-desc">Consignez vos analyses. L'XP attribuée nécessite la validation de la communauté (obtention minimale d'un cœur ❤️ d'un tiers).</p>
       </div>
       <div id="reflectionsContainer" class="editorial-grid catalog-list"></div>
     </section>
 
-    <!-- SECTION 03 : QUIZ -->
+    <!-- QUIZ -->
     <section id="sec-quizzes" class="app-section">
       <div class="section-header">
         <span class="section-tag">[ ÉVALUATION TECHNIQUE ]</span>
@@ -120,7 +117,7 @@
       <div id="quizzesContainer" class="editorial-grid catalog-list"></div>
     </section>
 
-    <!-- SECTION 04 : BOSS & ÉVÉNEMENTS -->
+    <!-- BOSS & ÉVÉNEMENTS -->
     <section id="sec-boss" class="app-section">
       <div class="section-header">
         <span class="section-tag">[ REGISTRE DES COMBATS ]</span>
@@ -161,10 +158,19 @@
     <span>CATALOGUE ARCHIVISTIQUE // EDITION SOMBRE</span>
   </footer>
 
-  <!-- INTEGRATION DES SCRIPTS AVEC CHEMINS EXACTS DE VOTRE DOSSIER -->
+  <!-- CHARGEMENT DES FICHIERS DES DOSSIERS REELS -->
   <script src="reflection_questions.js"></script>
   <script src="quiz_questions.js"></script>
-  <script src="systems/engines.js"></script>
+  
+  <!-- Fichiers du dossier /systems/ -->
+  <script src="systems/event-bus.js"></script>
+  <script src="systems/anti-cheat.js"></script>
+  <script src="systems/player-stats.js"></script>
+  <script src="systems/quest-system.js"></script>
+  <script src="systems/boss-engine.js"></script>
+  <script src="systems/event-engine.js"></script>
+
+  <!-- Script principal de contrôle -->
   <script src="script.js"></script>
 </body>
 </html>
