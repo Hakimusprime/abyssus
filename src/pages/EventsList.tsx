@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Clock, Zap, ArrowRight, Calendar } from 'lucide-react';
 import { supabase, type AbyssEvent, type Quiz } from '@/lib/supabase';
+import { playSound } from '@/lib/sound';
 
 export default function EventsList() {
   const [events, setEvents] = useState<AbyssEvent[]>([]);
@@ -46,7 +47,7 @@ export default function EventsList() {
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(ev.ends_at).toLocaleDateString()}</span>
             </div>
             {linkedQuiz && (
-              <Link to={`/quiz/${linkedQuiz.id}`} className="btn-primary text-sm mt-4 inline-flex">
+              <Link to={`/quiz/${linkedQuiz.id}`} onClick={() => playSound('quest-accept')} className="btn-primary text-sm mt-4 inline-flex">
                 Jouer: {linkedQuiz.title}<ArrowRight className="w-4 h-4" />
               </Link>
             )}

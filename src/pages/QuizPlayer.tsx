@@ -3,6 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X, Clock, Zap, Trophy, RotateCcw, ChevronRight, Loader2, AlertCircle, Heart } from 'lucide-react';
 import { supabase, type Quiz, type Question } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useEvents } from '@/context/EventContext';
+import { playSound } from '@/lib/sound';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, getRankIndex } from '@/lib/firebase';
 import { difficultyBadge } from '@/lib/ui';
@@ -13,6 +15,7 @@ export default function QuizPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { liveEvent } = useEvents();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -58,10 +61,12 @@ export default function QuizPlayer() {
     const correct = questions[currentIdx].correct_index === selected;
     if (correct) {
       setScore((s) => s + 1);
+      playSound('answer-correct');
     } else {
       setWrongCount((w) => w + 1);
       setHpDamage(1);
       setTimeout(() => setHpDamage(0), 800);
+      playSound('answer-wrong');
     }
     setAnswers((a) => [...a, selected]);
   };
@@ -100,6 +105,8 @@ export default function QuizPlayer() {
         if (newHp <= 0) {
           update.hp = 0;
           update.lastDeathAt = Date.now();
+          // Son unique de defaite si un boss est en cours.
+          if (liveEvent) playSound('boss-defeat');
         } else {
           update.hp = newHp;
         }
@@ -110,9 +117,10 @@ export default function QuizPlayer() {
       }
       setSubmitting(false);
     }
-  }, [answers, selected, questions, currentIdx, startTime, user, quiz]);
+  }, [answers, selected, questions, currentIdx, startTime, user, quiz, liveEvent]);
 
   const startQuiz = () => {
+    playSound('quest-accept');
     setPhase('playing');
     setStartTime(Date.now());
     setCurrentIdx(0);
@@ -144,7 +152,7 @@ export default function QuizPlayer() {
     const hpBlocked = user && user.hp <= 0;
     return (
       <div className="max-w-2xl mx-auto animate-fade-in">
-        <Link to="/catalog" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-white mb-6">
+        <Link to="/catalog" onClick={() => playSound('quest-refuse')} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-white mb-6">
           <ArrowLeft className="w-4 h-4" /> Retour
         </Link>
         <div className={`h-40 rounded-2xl bg-gradient-to-r ${quiz.cover_gradient} relative overflow-hidden mb-6 border border-white/5`}>

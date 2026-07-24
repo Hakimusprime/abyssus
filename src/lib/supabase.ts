@@ -3,9 +3,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false },
-});
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    'Configuration Supabase manquante : crée un fichier .env à la racine du projet avec ' +
+      'VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY, puis relance le serveur de dev.'
+  );
+}
+
+// Valeurs de repli pour éviter que createClient ne fasse planter toute l'application
+// au chargement lorsque la configuration est absente. Les requêtes échoueront alors
+// proprement au lieu de bloquer l'app entière.
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key',
+  {
+    auth: { persistSession: false },
+  }
+);
 
 export type Category = {
   id: string;
@@ -64,6 +78,7 @@ export type AbyssEvent = {
   starts_at: string;
   ends_at: string;
   is_active: boolean;
+  event_type: 'boss' | 'special';
   created_at: string;
 };
 

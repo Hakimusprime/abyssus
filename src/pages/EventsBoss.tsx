@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Crown, Plus, Trash2, Edit3, X, Save, Sparkles, Clock, Zap, Loader2 } from 'lucide-react';
 import { supabase, type AbyssEvent, type Quiz } from '@/lib/supabase';
+import { useEvents } from '@/context/EventContext';
 
 export default function EventsBoss() {
+  const { refresh } = useEvents();
   const [events, setEvents] = useState<AbyssEvent[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +19,7 @@ export default function EventsBoss() {
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [eventType, setEventType] = useState<'boss' | 'special'>('boss');
 
   const loadData = async () => {
     const [{ data: evts }, { data: qs }] = await Promise.all([
@@ -32,7 +35,7 @@ export default function EventsBoss() {
 
   const resetForm = () => {
     setTitle(''); setDescription(''); setQuizId(''); setBonusXp(100);
-    setStartsAt(''); setEndsAt(''); setIsActive(true); setEditing(null);
+    setStartsAt(''); setEndsAt(''); setIsActive(true); setEventType('boss'); setEditing(null);
   };
 
   const saveEvent = async (e: FormEvent) => {
@@ -40,32 +43,34 @@ export default function EventsBoss() {
     setSaving(true);
     const payload = {
       title, description, quiz_id: quizId || null, bonus_xp: bonusXp,
-      starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), is_active: isActive,
+      starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(),
+      is_active: isActive, event_type: eventType,
     };
     if (editing) {
       await supabase.from('events').update(payload).eq('id', editing.id);
     } else {
       await supabase.from('events').insert(payload);
     }
-    resetForm(); setShowForm(false); setSaving(false); loadData();
+    resetForm(); setShowForm(false); setSaving(false); loadData(); refresh();
   };
 
   const editEvent = (ev: AbyssEvent) => {
     setEditing(ev);
     setTitle(ev.title); setDescription(ev.description); setQuizId(ev.quiz_id ?? '');
-    setBonusXp(ev.bonus_xp); setStartsAt(ev.starts_at.slice(0, 16)); setEndsAt(ev.ends_at.slice(0, 16)); setIsActive(ev.is_active);
+    setBonusXp(ev.bonus_xp); setStartsAt(ev.starts_at.slice(0, 16)); setEndsAt(ev.ends_at.slice(0, 16));
+    setIsActive(ev.is_active); setEventType(ev.event_type === 'special' ? 'special' : 'boss');
     setShowForm(true);
   };
 
   const deleteEvent = async (id: string) => {
     if (!confirm('Delete this event?')) return;
     await supabase.from('events').delete().eq('id', id);
-    loadData();
+    loadData(); refresh();
   };
 
   const toggleActive = async (ev: AbyssEvent) => {
     await supabase.from('events').update({ is_active: !ev.is_active }).eq('id', ev.id);
-    loadData();
+    loadData(); refresh();
   };
 
   const now = new Date();
@@ -107,6 +112,13 @@ export default function EventsBoss() {
               <option value="">Aucun quiz lie</option>
               {quizzes.map(q => <option key={q.id} value={q.id}>{q.title}</option>)}
             </select>
+          </div>
+          <div><label className="text-sm text-slate-500">Type d'evenement</label>
+            <select value={eventType} onChange={e => setEventType(e.target.value as 'boss' | 'special')} className="input-field mt-1">
+              <option value="boss">Boss (theme rouge oppressant)</option>
+              <option value="special">Evenement Special (theme violet)</option>
+            </select>
+            <p className="text-xs text-slate-600 mt-1">Le theme du site s'adapte automatiquement quand l'evenement est en cours.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="text-sm text-slate-500">Debut</label><input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} className="input-field mt-1" required /></div>
