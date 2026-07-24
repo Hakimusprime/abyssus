@@ -2,13 +2,15 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
+const env = import.meta.env;
+
 const firebaseConfig = {
-  apiKey: "AIzaSyA7OxNqHBiVsCNxdhatWRY1WUHYPaO1AmM",
-  authDomain: "abyssus-1eb8b.firebaseapp.com",
-  projectId: "abyssus-1eb8b",
-  storageBucket: "abyssus-1eb8b.firebasestorage.app",
-  messagingSenderId: "801360821944",
-  appId: "1:801360821944:web:fb267bd710f067bf027e4d"
+  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyA7OxNqHBiVsCNxdhatWRY1WUHYPaO1AmM",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "abyssus-1eb8b.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || "abyssus-1eb8b",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "abyssus-1eb8b.firebasestorage.app",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "801360821944",
+  appId: env.VITE_FIREBASE_APP_ID || "1:801360821944:web:fb267bd710f067bf027e4d"
 };
 
 const app = initializeApp(firebaseConfig);
