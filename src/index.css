@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cinzel", ui-serif, Georgia, serif;
+
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--card);
+  --color-card-foreground: var(--text);
+  --color-primary: var(--cyan);
+  --color-primary-foreground: #000000;
+  --color-muted: var(--muted);
+  --color-muted-foreground: #a1a1aa;
+  --color-border: var(--muted);
+  --color-text: var(--text);
+  --color-gold: var(--gold);
+  --color-amber: var(--amber);
+  --color-cyan: var(--cyan);
+  --color-abyss: var(--abyss);
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --shadow-glow-soft: 0 0 12px rgba(6, 182, 212, 0.15);
+  --shadow-glow-strong: 0 0 24px rgba(6, 182, 212, 0.4);
+  --shadow-gold-glow: 0 0 20px rgba(212, 175, 55, 0.3);
+  --shadow-inset-dark: inset 0 2px 20px rgba(0, 0, 0, 0.8);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+:root {
+  --bg: #030305; /* Deep abyssal black */
+  --abyss: #010103;
+  --card: rgba(18, 18, 22, 0.4);
+  --gold: #d4af37;
+  --amber: #f59e0b;
+  --cyan: #0891b2; /* Deep bioluminescent */
+  --text: #f4f4f5;
+  --muted: rgba(255, 255, 255, 0.05);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none; /* Mobile app feel */
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Premium Glassmorphism utilities */
+.glass {
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.2) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-inset-dark), var(--shadow-glass);
+}
+
+/* Smoke and Portal Animations */
+@keyframes smoke {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translateY(-50px) scale(1.2) rotate(180deg);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100px) scale(1.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-portal {
+  0% {
+    box-shadow: 0 0 20px 5px rgba(220, 38, 38, 0.2), inset 0 0 20px 5px rgba(220, 38, 38, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px 15px rgba(220, 38, 38, 0.5), inset 0 0 40px 15px rgba(220, 38, 38, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 20px 5px rgba(220, 38, 38, 0.2), inset 0 0 20px 5px rgba(220, 38, 38, 0.2);
+  }
+}
+
+.animate-smoke-1 {
+  animation: smoke 15s infinite linear;
+}
+.animate-smoke-2 {
+  animation: smoke 20s infinite linear reverse;
+  animation-delay: -5s;
+}
+.animate-smoke-3 {
+  animation: smoke 18s infinite linear;
+  animation-delay: -10s;
+}
+.animate-pulse-portal {
+  animation: pulse-portal 3s infinite ease-in-out;
+}
+
+/* Lightweight entrance animations */
+@keyframes ab-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ab-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes ab-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes ab-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: ab-fade-in 0.7s ease both;
+}
+.animate-slide-up {
+  animation: ab-slide-up 0.7s ease both;
+}
+.animate-slide-right {
+  animation: ab-slide-right 0.5s ease both;
+}
+.animate-zoom-in {
+  animation: ab-zoom-in 0.5s ease both;
+}
+
+/*
+ * Compatibility layer for the `animate-in` utility set used across the pages
+ * (originally from tailwindcss-animate). We provide a light-weight implementation
+ * so the existing class names keep working without the plugin.
+ */
+@keyframes ab-enter {
+  from {
+    opacity: var(--ab-enter-opacity, 1);
+    transform: translate3d(var(--ab-enter-x, 0), var(--ab-enter-y, 0), 0)
+      scale(var(--ab-enter-scale, 1));
+  }
+}
+
+.animate-in {
+  animation: ab-enter 0.6s ease both;
+}
+
+/* opacity */
+.fade-in {
+  --ab-enter-opacity: 0;
+}
+
+/* zoom */
+.zoom-in,
+.zoom-in-95 {
+  --ab-enter-scale: 0.95;
+}
+
+/* directional slides */
+.slide-in-from-bottom-4 {
+  --ab-enter-y: 1rem;
+}
+.slide-in-from-bottom-8 {
+  --ab-enter-y: 2rem;
+}
+.slide-in-from-right-8 {
+  --ab-enter-x: 2rem;
+}
+
+/* duration modifiers */
+.duration-500 {
+  animation-duration: 0.5s;
+}
+.duration-700 {
+  animation-duration: 0.7s;
+}
+
+/* Custom scrollbar - hidden for mobile feel */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
