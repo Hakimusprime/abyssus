@@ -3,11 +3,12 @@ import { NavLink } from "react-router";
 import { 
   Home, User, Brain, Gamepad2, Globe, Trophy, 
   Gem, Target, Backpack, Users, Settings, LogOut,
-  Menu, X, Skull
+  Menu, X, Skull, ShieldAlert
 } from "lucide-react";
 import { cn } from "./ui/Button";
 import { useAuth } from "../context/AuthContext";
-import { auth, RANKS } from "../firebase";
+import { RANKS } from "../firebase";
+import { isOwner } from "../config/admin";
 
 const navItems = [
   { to: "/", icon: Home, label: "Accueil" },
@@ -115,6 +116,24 @@ export function Sidebar() {
           );
         })}
         
+        {isOwner(user?.email) && (
+          <NavLink
+            to="/creator"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 border border-gold/20",
+                isActive
+                  ? "bg-gold/20 text-gold"
+                  : "text-gold/80 hover:text-gold hover:bg-gold/10"
+              )
+            }
+          >
+            <ShieldAlert className="w-5 h-5 shrink-0" />
+            <span className="font-medium tracking-wide text-sm">Chambre Overseer</span>
+          </NavLink>
+        )}
+
         {user ? (
           <button onClick={handleLogout} className="flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all duration-300 text-left mt-auto">
             <LogOut className="w-5 h-5 shrink-0" />
